@@ -7,6 +7,8 @@ type RequestManager struct {
 
 }
 
+var RequestMgr = RequestManager{}
+
 func (self *RequestManager) Init(max_queue_len int) {
 	self.wait_push_req_queue = make(chan *ArxRequest, max_queue_len)
 }

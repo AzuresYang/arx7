@@ -1,21 +1,32 @@
 /*
  * @Author: rayou
- * @Date: 2019-03-25 22:50:25
+ * @Date: 2019-04-02 19:51:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-03-26 23:22:41
+ * @Last Modified time: 2019-04-02 20:02:29
  */
 package spider
 
-import "sync"
+import "github.com/AzuresYang/arx7/app/spider/downloader/request"
 
 type Spider struct {
-	EnableCookie bool // 所有请求是否使用cookie记录
-	// Namespace       func(self *Spider) string                                  // 命名空间，用于输出文件、路径的命名
-	// SubNamespace    func(self *Spider, dataCell map[string]interface{}) string // 次级命名，用于输出文件、路径的命名，可依赖具体数据内容
-	// 以下字段系统自动赋值
-	id      int
-	subName string // 由Keyin转换为的二级标识名
-	status  int    // 执行状态
-	lock    sync.RWMutex
-	once    sync.Once
+	to_stop chan int
+	to_end  chan int
+}
+
+func (spider *Spider) Init() {
+	request.RequestManager.Init(20)
+	// 包括crawler 池的初始化 ？？？
+
+}
+
+func (spider *Spider) Stop() {
+
+}
+
+// 开始运行
+func (spider *Spider) Run() {
+	spider.Init()
+}
+
+func (spider *Spider) run() {
 }
