@@ -1,0 +1,1 @@
+{"ConfigDir":"./arx_pkg\\cfg\\","ConfigFileName":"crawler_config.json","TaskConf":{"TaskName":"-1","TaskId":-1,"CrawlerCapacity":0,"RedisAddress":"","RedisPort":0,"RedisQueueName":""},"RequestGetTimeOut":5000000000}

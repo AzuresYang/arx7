@@ -22,8 +22,8 @@ func (self *RequestManager) Stop() {
 }
 
 // 获取一个请求， 等可以连上redis之后，从redis中获取
-func (self *RequestManager) GetRequest() (req *ArxRequest) {
-	click := time.After(10 * time.Second)
+func (self *RequestManager) GetRequest(timeout time.Duration) (req *ArxRequest) {
+	click := time.After(timeout)
 	select {
 	case req = <-self.wait_push_req_queue:
 		return req
