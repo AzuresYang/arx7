@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-03 18:02:56
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-03 18:19:19
+ * @Last Modified time: 2019-04-05 22:07:32
  */
 
 package pipeline
@@ -27,7 +27,7 @@ func (self *pipelineManager) Register(pipe Pipeline) error {
 	self.Lock()
 	defer self.Unlock()
 	name := pipe.GetName()
-	elem := pipelien_map[name]
+	elem := self.pipeline_map[name]
 	if elem != nil {
 		return errors.New("Repeat Pipeline" + name)
 	}
@@ -48,7 +48,10 @@ func (self *pipelineManager) InitPipeline() error {
 			return ret
 		}
 	}
+	return nil
 }
 
 // 停止所有管道
-func 
+func (self *pipelineManager) StopPipeline() error {
+	return nil
+}

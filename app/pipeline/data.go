@@ -6,15 +6,17 @@
  */
 
 package pipeline
+
 // 要收集的数据
-type CollectData Struct{
-	Type int	// 数据类型
-	Cell map[string]interface{}		// 具体数据内容
+type CollectData struct {
+	Type int                    // 数据类型
+	Cell map[string]interface{} // 具体数据内容
 }
 
-func NewCollectData(dataType int) *CollectData{
+func NewCollectData(dataType int) *CollectData {
 	cd := &CollectData{
 		Type: dataType,
-		Cell: make(map[string]interface{})
+		Cell: make(map[string]interface{}),
 	}
+	return cd
 }

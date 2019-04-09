@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-26 21:46:02
  * @Last Modified by: rayou
- * @Last Modified time: 2019-03-27 19:05:20
+ * @Last Modified time: 2019-04-10 01:33:43
  */
 package request
 
@@ -10,8 +10,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type HttpMethod string
@@ -27,8 +30,9 @@ const (
 	DEFALUT_DOWNLOAD_TIMEOUT = 2 * time.Minute  // 默认下载超时
 )
 
+type Temp map[string]interface{}
 type ArxRequest struct {
-	SpiderName      string        // 要使用的spider,适配于解析规则
+	ProcerName      string        // 要使用的Procer,适配于解析规则
 	Url             string        // url
 	Header          http.Header   // http头
 	Method          string        // 请求方法， 使用大写
@@ -39,6 +43,8 @@ type ArxRequest struct {
 	ConnTimeout     time.Duration // 链接超时
 	DownloadTimeout time.Duration // 下载超时
 	IDDownloader    int           // 下载器id
+	Temp            Temp          // 临时数据，给处理器processor用的
+	TempStrMap      map[string]string
 }
 
 func (self *ArxRequest) Prepare() error {
@@ -73,8 +79,8 @@ func (self *ArxRequest) Prepare() error {
 	return nil
 }
 
-func NewArxRequest(url string) ArxRequest {
-	request := ArxRequest{}
+func NewArxRequest(url string) *ArxRequest {
+	request := &ArxRequest{}
 	request.Url = url
 	request.Method = "GET"
 	request.Header = make(http.Header)
@@ -82,6 +88,30 @@ func NewArxRequest(url string) ArxRequest {
 	request.TryTimes = DEFALUT_TRY_TIMES
 	request.ConnTimeout = DEFALUT_CONNECT_TIMEOUT
 	request.DownloadTimeout = DEFALUT_DOWNLOAD_TIMEOUT
+	request.TempStrMap = make(map[string]string)
+	return request
+}
+
+func (self *ArxRequest) Clone() *ArxRequest {
+	request := NewArxRequest(self.Url)
+	request.ProcerName = string(self.ProcerName)
+	request.Method = self.Method
+	request.EnableCookie = self.EnableCookie
+	request.TryTimes = self.TryTimes
+	request.ConnTimeout = self.ConnTimeout
+	request.DownloadTimeout = self.DownloadTimeout
+	request.IDDownloader = self.IDDownloader
+	request.PostData = string(self.PostData)
+	request.Priority = self.Priority
+	for name, headers := range self.Header {
+		name = string(name)
+		for _, h := range headers {
+			request.Header.Add(name, h)
+		}
+	}
+	for k, v := range self.TempStrMap {
+		request.TempStrMap[k] = string(v)
+	}
 	return request
 }
 
@@ -94,4 +124,37 @@ func (self *ArxRequest) Serialize() string {
 func UnSerialize(s string) (*ArxRequest, error) {
 	req := new(ArxRequest)
 	return req, json.Unmarshal([]byte(s), req)
+}
+
+// 返回临时缓存数据
+func (self Temp) get(key string, defaultValue interface{}) interface{} {
+	defer func() {
+		if p := recover(); p != nil {
+			log.Errorf(" *     Request.Temp.Get(%v): %v", key, p)
+		}
+	}()
+
+	var (
+		err error
+		b   = []byte(self[key].(string))
+	)
+
+	if reflect.TypeOf(defaultValue).Kind() == reflect.Ptr {
+		err = json.Unmarshal(b, defaultValue)
+	} else {
+		err = json.Unmarshal(b, &defaultValue)
+	}
+	if err != nil {
+		log.Errorf(" *     Request.Temp.Get(%v): %v", key, err)
+	}
+	return defaultValue
+}
+
+func (self Temp) set(key string, value interface{}) Temp {
+	b, err := json.Marshal(value)
+	if err != nil {
+		log.Errorf(" *     Request.Temp.Set(%v): %v", key, err)
+	}
+	self[key] = string(b)
+	return self
 }

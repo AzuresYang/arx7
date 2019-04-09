@@ -6,11 +6,14 @@
  */
 package config
 
+import "time"
+
 type CrawlerTask struct {
-	TaskName        string // 任务名
-	TaskId          int    // 任务ID
-	CrawlerCapacity uint32 // 爬虫数量
-	RedisAddress    string
-	RedisPort       uint32
-	RedisQueueName  string // redis中的队列名
+	TaskName                    string // 任务名
+	TaskId                      int    // 任务ID
+	CrawlerCapacity             uint32 // 爬虫数量
+	RedisAddress                string
+	RedisPort                   uint32
+	RedisQueueName              string        // redis中的队列名
+	MaxGetRequestNullTimeSecond time.Duration // 长时间内没有新链接时，停止工作crawler的设置， 单位：秒， 为0时表示一直工作
 }

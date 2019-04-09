@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-02 20:57:36
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-02 22:15:25
+ * @Last Modified time: 2019-04-05 22:13:50
  */
 package crawler
 
@@ -41,7 +41,7 @@ func NewCrawlerPool(size uint32) CrawlerPool {
 func (self *crawlerpool) Set(size uint32) uint32 {
 	self.Lock()
 	defer self.Unlock()
-	status = status.RUN
+	self.status = status.RUN
 	var pool_size uint32 = 1
 	if size > 0 {
 		pool_size = size
@@ -77,7 +77,7 @@ func (self *crawlerpool) Get() Crawler {
 				return crawler
 			}
 		}
-		// 迟0.5秒后才获取， 太快获取也是空
+		// 迟0.5秒后才获取， 太快获取也是空的，其它的还没有释放
 		time.Sleep(500 * time.Millisecond)
 	}
 }
@@ -94,14 +94,13 @@ func (self *crawlerpool) Free(crawler Crawler) {
 func (self *crawlerpool) Stop() {
 	self.Lock()
 	defer self.Unlock()
-	if self.status == status.STOP
-	{
+	if self.status == status.STOP {
 		return
 	}
 	self.status = status.STOP
 	close(self.can_use)
 	self.can_use = nil
-	for _, crawler := range self.pool{
+	for _, crawler := range self.pool {
 		crawler.Stop()
 	}
 }

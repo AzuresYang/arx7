@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-02 22:25:27
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-02 23:42:44
+ * @Last Modified time: 2019-04-10 00:05:23
  */
 
 package processor
@@ -10,6 +10,8 @@ package processor
 import (
 	"errors"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type (
@@ -36,6 +38,7 @@ func (self *processor_manager) Register(processor Processor) error {
 		return errors.New("Repeat Processor:" + name)
 	}
 	self.processor_map[name] = processor
+	log.Info("Register procer:" + name)
 	return nil
 }
 
@@ -45,4 +48,11 @@ func (self *processor_manager) GetProcessor(name string) Processor {
 		return nil
 	}
 	return procer.GetOneProcessor()
+}
+
+func (self *processor_manager) PrintAllProcessor(msg string) {
+	log.Infof("msg:%s,  self:%p  , register procesr num :%d\n", msg, self, len(self.processor_map))
+	for k, v := range self.processor_map {
+		log.Infof("procer -- [%s]%s\n", k, v.GetName())
+	}
 }

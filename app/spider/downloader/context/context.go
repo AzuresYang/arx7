@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-25 23:09:36
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-02 23:35:44
+ * @Last Modified time: 2019-04-09 23:09:47
  */
 package context
 
@@ -23,3 +23,7 @@ type CommContext struct {
 }
 
 // 后续可以考虑使用syn里面的池子方法来构建context上下文的池子
+
+func GetNewContext() *CommContext {
+	return &CommContext{}
+}

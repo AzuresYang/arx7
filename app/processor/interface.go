@@ -17,5 +17,6 @@ type Processor interface {
 	// 目前采用第二种方法， 返回的是值还是指针，这个有实现者决定
 	GetOneProcessor() Processor
 	Free()
-	Process(*context.CommContext)
+	// 返回错误码和处理消息
+	Process(*context.CommContext) (int, string)
 }

@@ -29,8 +29,9 @@ const (
 	// LOG_ASYNC      bool   = true                            // 是否异步输出日志
 	PHANTOMJS_TEMP string = CACHE_DIR // Surfer-Phantom下载器：js文件临时目录
 	// 默认的一些配置
-	DEFAULT_REQ_GET_TIMEOUT time.Duration = 2 * time.Second
-	DEFAULT_REQ_IS_NULL_WAITTIME time.Duration = 1 * time.Second
+	DEFAULT_REQ_GET_TIMEOUT      time.Duration = 2 * time.Second
+	DEFAULT_REQ_IS_NULL_WAITTIME time.Duration = 500 * time.Millisecond
+	DEFAULT_REQ_MAX_NULL_TIME    time.Duration = 10 * time.Second // 获取req为空的时间最长时间，超过这个时间，则爬虫停止爬取
 )
 
 type CrawlerConfig struct {
@@ -48,9 +49,10 @@ func BuildDefaultCrawlerConfig() *CrawlerConfig {
 	conf.RequestGetTimeOut = DEFAULT_REQ_GET_TIMEOUT
 	// 爬取任务默认配置
 	conf.TaskConf = CrawlerTask{
-		TaskName:        "-1",
-		TaskId:          -1,
-		CrawlerCapacity: 0,
+		TaskName:                    "-1",
+		TaskId:                      -1,
+		CrawlerCapacity:             0,
+		MaxGetRequestNullTimeSecond: DEFAULT_REQ_MAX_NULL_TIME,
 	}
 	return conf
 }

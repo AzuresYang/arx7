@@ -2,9 +2,9 @@
  * @Author: rayou
  * @Date: 2019-03-27 19:02:59
  * @Last Modified by: rayou
- * @Last Modified time: 2019-03-27 19:07:46
+ * @Last Modified time: 2019-04-09 20:40:33
  */
-package http
+package httpUtil
 
 import (
 	"fmt"

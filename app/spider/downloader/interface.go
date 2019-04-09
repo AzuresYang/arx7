@@ -15,5 +15,5 @@ import (
 
 // 定义一个下载器接口， 接受一个请求， 解析器， 生成解析上下文
 type Downloader interface {
-	Download(*processor.Processor, *request.ArxRequest) *context.CommContext
+	Download(processor.Processor, *request.ArxRequest) *context.CommContext
 }
