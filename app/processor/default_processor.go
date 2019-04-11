@@ -46,7 +46,7 @@ func findNewRequest(ctx *context.CommContext) {
 	bodystr := string(body)
 	log.Infof("download first page")
 	lines := strings.Split(bodystr, "\n")
-	max_num := 20
+	max_num := 50
 	for _, line := range lines {
 		params := flysnowRegexp.FindStringSubmatch(line)
 		if params != nil {

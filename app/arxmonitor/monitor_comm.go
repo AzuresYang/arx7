@@ -2,10 +2,10 @@
  * @Author: rayou
  * @Date: 2019-04-09 19:50:57
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-09 22:22:32
+ * @Last Modified time: 2019-04-11 22:13:41
  */
 
-package monitor
+package arxmonitor
 
 import (
 	"encoding/json"
@@ -31,17 +31,32 @@ type MonitorMsg struct {
 
 type MonitorMsgPkg struct {
 	Ip   string // 监控上报地址
-	Msgs []*MonitorMsg
+	Msgs []MonitorMsg
 }
 
-func newMonitorMsgPkg(ip string, msg_num int) *MonitorMsgPkg {
+func NewMonitorMsgPkg(ip string, msg_num int) *MonitorMsgPkg {
 	pkg := &MonitorMsgPkg{
 		Ip:   ip,
-		Msgs: make([]*MonitorMsg, 0, msg_num),
+		Msgs: make([]MonitorMsg, 0, msg_num),
 	}
 	return pkg
 }
 
+func (self *MonitorMsgPkg) AddMsg(msg *MonitorMsg) {
+	self.Msgs = append(self.Msgs, *msg)
+}
+
+// 除了value外都相同的监控值
+func IsEqualMsgButValue(a *MonitorMsg, b *MonitorMsg) bool {
+	if a.SvcId == b.SvcId &&
+		a.Metric == b.Metric &&
+		a.Classfy == b.Classfy &&
+		a.Time == b.Time &&
+		a.MsgType == b.MsgType {
+		return true
+	}
+	return false
+}
 func (self *MonitorMsg) Serialize() string {
 	json_byte, _ := json.Marshal(self)
 	return string(json_byte[:])
@@ -53,7 +68,7 @@ func UnSerialize(s string) (*MonitorMsg, error) {
 	return msg, json.Unmarshal([]byte(s), msg)
 }
 
-func newMonitorMsg(svcid uint32, metric uint32, msg_type MonitorMsgType) *MonitorMsg {
+func NewMonitorMsg(svcid uint32, metric uint32, msg_type MonitorMsgType) *MonitorMsg {
 	msg := &MonitorMsg{
 		SvcId:   svcid,
 		Metric:  metric,

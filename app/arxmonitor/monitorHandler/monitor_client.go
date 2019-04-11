@@ -2,10 +2,10 @@
  * @Author: rayou
  * @Date: 2019-04-07 17:15:03
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-09 22:28:05
+ * @Last Modified time: 2019-04-11 22:16:08
  */
 
-package monitor
+package monitorHandler
 
 import (
 	"container/list"
@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AzuresYang/arx7/app/arxmonitor"
 	"github.com/AzuresYang/arx7/util/httpUtil"
 	log "github.com/sirupsen/logrus"
 )
@@ -39,7 +40,7 @@ type (
 		LocalIp             string
 		m                   sync.Mutex
 		MsgList             *list.List
-		Msgs                chan *MonitorMsg
+		Msgs                chan *arxmonitor.MonitorMsg
 		MaxMsgSendNum       int   // 达到这个数字之后就立刻开始发送监控数据
 		MsgSendTime         int64 // 多久开始发送一次监控数据
 		MsgSendTimeDuration time.Duration
@@ -57,7 +58,7 @@ func InitMonitorHandler(ip string, port uint32, svcid uint32) error {
 		SvcId:               svcid,
 		MsgList:             list.New(),
 		MaxMsgSendNum:       default_msg_send_num,
-		Msgs:                make(chan *MonitorMsg, default_max_msg_num),
+		Msgs:                make(chan *arxmonitor.MonitorMsg, default_max_msg_num),
 		MsgSendTime:         default_msg_send_time,
 		MsgSendTimeDuration: default_msg_send_time_duration,
 		LastMsgSendTime:     0,
@@ -108,10 +109,10 @@ func sendMsg() {
 		monitor_handler.m.Unlock()
 		return
 	}
-	msg_pkg := newMonitorMsgPkg(monitor_handler.LocalIp, monitor_handler.MsgList.Len())
+	msg_pkg := arxmonitor.NewMonitorMsgPkg(monitor_handler.LocalIp, monitor_handler.MsgList.Len())
 	for i := monitor_handler.MsgList.Front(); i != nil; i = i.Next() {
-		msg := i.Value.(*MonitorMsg)
-		msg_pkg.Msgs = append(msg_pkg.Msgs, msg)
+		msg := i.Value.(*arxmonitor.MonitorMsg)
+		msg_pkg.Msgs = append(msg_pkg.Msgs, *msg)
 	}
 	// 初始化清空监控数据列表
 	monitor_handler.MsgList.Init()
@@ -121,7 +122,7 @@ func sendMsg() {
 }
 
 // 发送监控数据包
-func doSendMsg(pkg *MonitorMsgPkg) {
+func doSendMsg(pkg *arxmonitor.MonitorMsgPkg) {
 	for i, _ := range pkg.Msgs {
 		fmt.Printf("[%d]\n", i)
 	}
@@ -142,30 +143,30 @@ func IfStop() bool {
 	return monitor_handler.If_Stop
 }
 func AddOne(metric uint32) {
-	msg := newMonitorMsg(monitor_handler.SvcId, metric, MONITORMSG_ADD)
+	msg := arxmonitor.NewMonitorMsg(monitor_handler.SvcId, metric, arxmonitor.MONITORMSG_ADD)
 	addMonitorMsg(msg)
 }
 
 func AddOneWithClassfy(metric uint32, classfy uint32) {
-	msg := newMonitorMsg(monitor_handler.SvcId, metric, MONITORMSG_ADD)
+	msg := arxmonitor.NewMonitorMsg(monitor_handler.SvcId, metric, arxmonitor.MONITORMSG_ADD)
 	msg.Classfy = classfy
 	addMonitorMsg(msg)
 }
 
 func Set(metric uint32, num uint32) {
-	msg := newMonitorMsg(monitor_handler.SvcId, metric, MONITORMSG_SET)
+	msg := arxmonitor.NewMonitorMsg(monitor_handler.SvcId, metric, arxmonitor.MONITORMSG_SET)
 	msg.Value = num
 	addMonitorMsg(msg)
 }
 
 func SetWithClassfy(metric uint32, classfy uint32, num uint32) {
-	msg := newMonitorMsg(monitor_handler.SvcId, metric, MONITORMSG_SET)
+	msg := arxmonitor.NewMonitorMsg(monitor_handler.SvcId, metric, arxmonitor.MONITORMSG_SET)
 	msg.Classfy = classfy
 	msg.Value = num
 	addMonitorMsg(msg)
 }
 
-func addMonitorMsg(msg *MonitorMsg) {
+func addMonitorMsg(msg *arxmonitor.MonitorMsg) {
 	monitor_handler.Msgs <- msg
 	/*
 		// 到达发送数量或者发送时间
