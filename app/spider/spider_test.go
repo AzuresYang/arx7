@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AzuresYang/arx7/app/arxlet"
+	"github.com/AzuresYang/arx7/app/message"
+
 	// "github.com/AzuresYang/arx7/app/pipeline"
 	"github.com/AzuresYang/arx7/app/processor"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
@@ -29,15 +32,15 @@ func buildReq(procer processor.Processor) {
 		request.RequestMgr.AddNeedGrabRequest(req, 2*time.Second)
 	}
 }
-func TestSpider(t *testing.T) {
+func TestCrawler(t *testing.T) {
 	log.SetLevel(log.TraceLevel)
 	request.RequestMgr.Init(10)
 	procer := processor.NewDefaultProcessor()
 	processor.Manager.Register(&procer)
 	fmt.Println("get procer succ")
 	buildReq(&procer)
-	sp := &Spider{}
-	sp.Start()
+	// sp := &Spider{}
+	// sp.Start()
 	time.Sleep(5 * time.Second)
 	t.Log("done")
 }
@@ -51,5 +54,19 @@ func TestRegx(t *testing.T) {
 	for i, param := range params {
 		fmt.Printf("[%d]%s\n", i, param)
 	}
+
+}
+
+func TestSpiderLet(t *testing.T) {
+	log.SetLevel(log.TraceLevel)
+	spider := NewSpider()
+	err := spider.Init("8888")
+	if err != nil {
+		t.Error("init spider fail:", err.Error())
+	}
+	go spider.Run()
+	data := []byte("hello")
+	arxlet.SendTcpMsg(message.MSG_REQ_STAET_SPIDER, data, ":8888")
+	time.Sleep(2 * time.Second)
 
 }

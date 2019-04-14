@@ -2,40 +2,58 @@
  * @Author: rayou
  * @Date: 2019-04-02 19:51:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-09 22:47:25
+ * @Last Modified time: 2019-04-14 21:52:02
  */
 package spider
 
 import (
-	"github.com/AzuresYang/arx7/app/pipeline/output"
-	"github.com/AzuresYang/arx7/app/spider/crawler"
-	"github.com/AzuresYang/arx7/app/spider/downloader"
+	"github.com/AzuresYang/arx7/app/arxlet"
+	"github.com/AzuresYang/arx7/app/message"
+	"github.com/AzuresYang/arx7/app/spider/crawlerEngine"
 	log "github.com/sirupsen/logrus"
 )
 
 type Spider struct {
-	to_stop chan int
-	to_end  chan int
+	ce     *crawlerEngine.CrawlerEngine
+	server *arxlet.BaseTcpServer
 }
 
-var crawler_pool crawler.CrawlerPool = crawler.NewCrawlerPool(5)
-
-func (spider *Spider) Start() {
-	log.Info("spider start")
-	// request.RequestMgr.Init(20)
-	// 包括crawler 池的初始化 ？？？
-	craw_num := 5
-	for i := 0; i < craw_num; i++ {
-		cw := crawler_pool.Get()
-		pipe := &output.OutputFile{}
-		dl := &downloader.SimpleDownloader{}
-		cw.Init(dl, pipe)
-		go cw.Run()
+func NewSpider() *Spider {
+	spider := &Spider{
+		server: arxlet.NewBaseTcpServer(),
 	}
+
+	cmds := []uint32{message.MSG_REQ_STAET_SPIDER, message.MSG_REQ_STOP_SPIDER}
+	spider.server.RegisterHandler(cmds, spider)
+	return spider
 }
 
-func (spider *Spider) Stop() {
-	if crawler_pool != nil {
-		crawler_pool.Stop()
+func (self *Spider) Init(listenport string) error {
+	err := self.server.Init(listenport)
+	if err != nil {
+		log.Errorf("Spider init server fail:%s", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (self *Spider) Run() {
+	self.server.Run()
+}
+
+func (self *Spider) Stop() {
+	self.ce.Stop()
+}
+
+func (self *Spider) HandlerEvent(ctx *arxlet.ConnContext) {
+	code_info := "Spider.HandlerEvent"
+	log.WithFields(log.Fields{
+		"line": code_info,
+		"addr": ctx.From.RemoteAddr().String(),
+		"cmd":  ctx.Msg.Cmd,
+	}).Info("recv event.")
+	switch ctx.Msg.Cmd {
+	case message.MSG_REQ_STAET_SPIDER:
+		log.Infof("[%s] recv start spider cmd.msg:%s\n", code_info, string(ctx.Msg.Data))
 	}
 }

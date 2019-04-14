@@ -14,8 +14,9 @@ const (
 	default_port            = "3306"
 	default_dbName          = "monitor_info"
 	default_charset         = "utf8"
-	default_maxConnLifetime = 100 // 数据库最大连接数
+	default_maxConnLifetime = 100 // 数据库最大连接时间
 	default_maxIdleConns    = 10  // 数据库最大闲置连接数
+	default_taskNum         = 3   // 负责保存的线程数目
 )
 
 type MysqlConfig struct {
@@ -27,7 +28,9 @@ type MysqlConfig struct {
 	DbName          string
 	MaxConnLifetime int
 	MaxIdleConns    int
+	TaskNum         int
 }
+
 
 func NewMysqlConfig() *MysqlConfig {
 	cfg := &MysqlConfig{
@@ -39,6 +42,7 @@ func NewMysqlConfig() *MysqlConfig {
 		DbName:          default_dbName,
 		MaxConnLifetime: default_maxConnLifetime,
 		MaxIdleConns:    default_maxIdleConns,
+		TaskNum:         default_taskNum,
 	}
 	return cfg
 }

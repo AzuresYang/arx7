@@ -9,7 +9,6 @@ package arxmonitor
 
 import (
 	"encoding/json"
-	"time"
 )
 
 type MonitorMsgType int
@@ -74,7 +73,7 @@ func NewMonitorMsg(svcid uint32, metric uint32, msg_type MonitorMsgType) *Monito
 		Metric:  metric,
 		Classfy: 0,
 		Value:   1,
-		Time:    time.Now().Unix(),
+		Time:    12345678,
 		MsgType: msg_type,
 	}
 	return msg

@@ -10,6 +10,7 @@ package monitorHandler
 import (
 	"container/list"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -127,6 +128,20 @@ func doSendMsg(pkg *arxmonitor.MonitorMsgPkg) {
 		fmt.Printf("[%d]\n", i)
 	}
 	fmt.Printf("msg list num:%d", monitor_handler.MsgList.Len())
+
+	conn, err := net.Dial("tcp", ":8888")
+	if err != nil {
+		log.Error("dial error:", err)
+		return
+	}
+	log.Info("conn server succ")
+	defer conn.Close()
+	data := "hello tcp"
+	var n int
+	n, err = conn.Write([]byte(data))
+	if err != nil {
+		log.Error("write error:", err.Error())
+	}
 }
 
 // func (self *monitorHandler) init(ip string, port uint32, svcid uint32) {
