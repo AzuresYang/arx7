@@ -30,7 +30,8 @@ func NewSpider() *Spider {
 	spider := &Spider{
 		server: arxlet.NewBaseTcpServer(),
 	}
-	spider.server.RegisterHandler(spider)
+	cmds := spider.GetSupportCmds()
+	spider.server.RegisterHandler(cmds, spider)
 	return spider
 }
 
@@ -70,7 +71,7 @@ func (self *Spider) StartCrawler(cfg *config.CrawlerConfig) (error, uint32) {
 	//
 	err := self.ce.Init()
 	if err != nil {
-		log.Errorf("[%s]init cralwerEngine fail:%s", err.Error())
+		log.Errorf("[%s]init cralwerEngine fail:%s", code_info, err.Error())
 		return err, status.ERR_START_SPIDER_FAIL
 	}
 	self.ce.Run()

@@ -7,6 +7,7 @@
 package app
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -37,7 +38,12 @@ func TestStartSpider(t *testing.T) {
 	go MasterSvr.Run()
 	go SpiderClient.Run()
 	time.Sleep(1 * time.Second)
-	err := arxlet.SendTcpMsg(message.MSG_ARXCMD_START_SPIDER, []byte(""), ":8888")
+	start_info := message.SpiderStartMsg{}
+	start_info.NodeAddrs = []string{
+		":9888",
+	}
+	send_bytes, _ := json.Marshal(start_info)
+	err := arxlet.SendTcpMsg(message.MSG_ARXCMD_START_SPIDER, send_bytes, ":8888")
 	if err != nil {
 		t.Errorf("send msg to master fail:%s", err.Error())
 	} else {

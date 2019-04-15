@@ -40,7 +40,7 @@ func buildClient() {
 	}
 }
 func TestServer(t *testing.T) {
-	server := &masterServer{}
+	server := NewArxMaster()
 	log.SetLevel(log.TraceLevel)
 	go server.Run()
 	time.Sleep(2 * time.Second)

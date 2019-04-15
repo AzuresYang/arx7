@@ -35,8 +35,8 @@ func (self *ArxMaster) Init(listenport string) error {
 	// 记录端口
 	self.scheduler.Init(listenport)
 	// 注册命名字
-
-	self.server.RegisterHandler(&self.scheduler)
+	cmds := self.scheduler.GetSupportCmds()
+	self.server.RegisterHandler(cmds, &self.scheduler)
 	return nil
 }
 

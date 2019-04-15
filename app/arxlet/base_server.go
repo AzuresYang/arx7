@@ -43,11 +43,11 @@ func NewBaseTcpServer() *BaseTcpServer {
 
 // 注册处理的handler
 // cmd的注册方式，如果已经存在相同的命令，可以报个错误
-func (self *BaseTcpServer) RegisterHandler(handler ConnectHandler) {
-	cmds := handler.GetSupportCmds()
+func (self *BaseTcpServer) RegisterHandler(cmds []uint32, handler ConnectHandler) {
+	// cmds := handler.GetSupportCmds()
 	for _, cmd := range cmds {
 		self.handlers[cmd] = handler
-		log.Infof("[BaseTcpServer.RegisterHandler]register cmd[%d] to %s", cmd, reflect.TypeOf(handler).String())
+		log.Debugf("[BaseTcpServer.RegisterHandler]register cmd[%d] to %s", cmd, reflect.TypeOf(handler).String())
 	}
 }
 
@@ -83,7 +83,7 @@ func (self *BaseTcpServer) Run() {
 // 收到消息后，根据msg.Cmd来找到对应的handler,进行处理
 func (self *BaseTcpServer) dispatchEvent(c net.Conn) {
 	code_info := "BaseTcpServer.dispatchEvent"
-	log.Infof("[%s] get conn:%s", code_info, c.RemoteAddr().String())
+	log.Tracef("[%s] get conn:%s", code_info, c.RemoteAddr().String())
 	var buf = make([]byte, max_buffer_size)
 	n, err := c.Read(buf)
 	if err != nil {
@@ -100,7 +100,7 @@ func (self *BaseTcpServer) dispatchEvent(c net.Conn) {
 	}
 	handler := self.handlers[ctx.Msg.Cmd]
 	if handler == nil {
-		log.Errorf("[%s] cannt found handler:%d", code_info, ctx.Msg.Cmd)
+		log.Errorf("[%s] cannt found handler:%d.register cmd:%+v", code_info, ctx.Msg.Cmd, self.handlers)
 	}
 	handler.HandlerEvent(ctx)
 	// 记得关闭连接

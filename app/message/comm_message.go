@@ -9,6 +9,8 @@ package message
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/AzuresYang/arx7/config"
 )
 
 type CommMsg struct {
@@ -24,7 +26,12 @@ type ResponseMsg struct {
 	Data   []byte
 }
 
-func NewResponseMsg(statue uint32 , msg string) *ResponseMsg{
+type SpiderStartMsg struct {
+	NodeAddrs []string // 节点Ip列表
+	Cfg       config.CrawlerTask
+}
+
+func NewResponseMsg(statue uint32, msg string) *ResponseMsg {
 	resp := &ResponseMsg{
 		Status: 0,
 		Msg:    "succ",
