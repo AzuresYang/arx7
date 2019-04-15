@@ -2,19 +2,21 @@
  * @Author: rayou
  * @Date: 2019-04-07 17:15:03
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-11 22:16:08
+ * @Last Modified time: 2019-04-15 21:27:30
  */
 
 package monitorHandler
 
 import (
 	"container/list"
+	"encoding/json"
 	"fmt"
-	"net"
 	"sync"
 	"time"
 
+	"github.com/AzuresYang/arx7/app/arxlet"
 	"github.com/AzuresYang/arx7/app/arxmonitor"
+	"github.com/AzuresYang/arx7/app/message"
 	"github.com/AzuresYang/arx7/util/httpUtil"
 	log "github.com/sirupsen/logrus"
 )
@@ -36,8 +38,7 @@ type (
 	// }
 	monitorHandler struct {
 		SvcId               uint32
-		Ip                  string
-		Port                uint32
+		MasterAddr          string
 		LocalIp             string
 		m                   sync.Mutex
 		MsgList             *list.List
@@ -52,10 +53,9 @@ type (
 
 var monitor_handler *monitorHandler
 
-func InitMonitorHandler(ip string, port uint32, svcid uint32) error {
+func InitMonitorHandler(masterAddr string, svcid uint32) error {
 	monitor_handler = &monitorHandler{
-		Ip:                  ip,
-		Port:                port,
+		MasterAddr:          masterAddr,
 		SvcId:               svcid,
 		MsgList:             list.New(),
 		MaxMsgSendNum:       default_msg_send_num,
@@ -124,24 +124,21 @@ func sendMsg() {
 
 // 发送监控数据包
 func doSendMsg(pkg *arxmonitor.MonitorMsgPkg) {
-	for i, _ := range pkg.Msgs {
-		fmt.Printf("[%d]\n", i)
-	}
-	fmt.Printf("msg list num:%d", monitor_handler.MsgList.Len())
-
-	conn, err := net.Dial("tcp", ":8888")
+	code_info := "MonitorHandler.doSendMsg"
+	// for i, _ := range pkg.Msgs {
+	// 	fmt.Printf("[%d]\n", i)
+	// }
+	// fmt.Printf("msg list num:%d", monitor_handler.MsgList.Len())
+	data, err := json.Marshal(pkg)
 	if err != nil {
-		log.Error("dial error:", err)
+		log.Errorf("[%s] serialize msg pkg fail.", code_info)
 		return
 	}
-	log.Info("conn server succ")
-	defer conn.Close()
-	data := "hello tcp"
-	var n int
-	n, err = conn.Write([]byte(data))
+	err = arxlet.SendTcpMsgTimeout(message.MSG_MONITOR_INFO, data, monitor_handler.MasterAddr, 5*time.Second)
 	if err != nil {
-		log.Error("write error:", err.Error())
+		log.Errorf("[%s] send msg pkg fail.", code_info)
 	}
+	log.Tracef("[%s] send monitor msg pkg succ.", code_info)
 }
 
 // func (self *monitorHandler) init(ip string, port uint32, svcid uint32) {

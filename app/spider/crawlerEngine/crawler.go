@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-25 22:21:15
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-10 00:13:55
+ * @Last Modified time: 2019-04-15 15:59:26
  */
 package crawlerEngine
 
@@ -24,8 +24,9 @@ type (
 	Crawler interface {
 		Init(dl downloader.Downloader, pipe pipeline.Pipeline) error // 初始化
 		Run()                                                        // 运行
-		Stop()                                                       // 停止运行
-		GetId() int                                                  // 获取ID
+		Stop()
+		IfStop() bool // 停止运行
+		GetId() int   // 获取ID
 	}
 
 	crawler struct {
@@ -48,7 +49,9 @@ func NewCrawler(id int) Crawler {
 		downloader: &downloader.SimpleDownloader{},
 	}
 }
-
+func (self *crawler) IfStop() bool {
+	return self.if_stop
+}
 func (self *crawler) SetDownloader(dl downloader.Downloader) {
 	self.downloader = dl
 }
@@ -87,6 +90,7 @@ func (self *crawler) Run() {
 	//	log.Errorf("crawler init fail.err:%s", err.Error())
 	//	return
 	//}
+	self.if_stop = true
 	self.run()
 	self.Stop()
 }

@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-02 20:57:36
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-14 20:59:37
+ * @Last Modified time: 2019-04-15 16:04:17
  */
 package crawlerEngine
 
@@ -38,6 +38,7 @@ func NewCrawlerPool(size uint32) CrawlerPool {
 	return cp
 }
 
+// 重启的时候会有点问题
 func (self *crawlerpool) Set(size uint32) uint32 {
 	self.Lock()
 	defer self.Unlock()
@@ -100,7 +101,21 @@ func (self *crawlerpool) Stop() {
 	self.status = status.STOP
 	close(self.can_use)
 	self.can_use = nil
-	for _, crawler := range self.pool {
-		crawler.Stop()
+	for i, _ := range self.pool {
+		self.pool[i].Stop()
 	}
+}
+
+// 是否全部停止运行
+func (self *crawlerpool) IfAllCrawlerStop() bool {
+	// 线程池子已经停止的话，可以
+	if self.status == status.STOP {
+		return true
+	}
+	for i, _ := range self.pool {
+		if !self.pool[i].IfStop() {
+			return false
+		}
+	}
+	return true
 }

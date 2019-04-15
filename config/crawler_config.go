@@ -27,8 +27,7 @@ const (
 	CACHE_DIR      string = WORK_ROOT + "/cache"                // 缓存文件目录
 	LOG            string = WORK_ROOT + "/logs/arx_crawler.log" // 日志文件路径
 	// LOG_ASYNC      bool   = true                            // 是否异步输出日志
-	PHANTOMJS_TEMP string = CACHE_DIR // Surfer-Phantom下载器：js文件临时目录
-	// 默认的一些配置
+	PHANTOMJS_TEMP               string        = CACHE_DIR // Surfer-Phantom下载器：js文件临时目录
 	DEFAULT_REQ_GET_TIMEOUT      time.Duration = 2 * time.Second
 	DEFAULT_REQ_IS_NULL_WAITTIME time.Duration = 500 * time.Millisecond
 	DEFAULT_REQ_MAX_NULL_TIME    time.Duration = 10 * time.Second // 获取req为空的时间最长时间，超过这个时间，则爬虫停止爬取
@@ -37,6 +36,7 @@ const (
 type CrawlerConfig struct {
 	ConfigDir      string // 配置文件所在路径
 	ConfigFileName string // 配置文件名
+	MasterAddr     string // master地址
 	TaskConf       CrawlerTask
 
 	RequestGetTimeOut time.Duration
@@ -50,8 +50,8 @@ func BuildDefaultCrawlerConfig() *CrawlerConfig {
 	// 爬取任务默认配置
 	conf.TaskConf = CrawlerTask{
 		TaskName:                    "-1",
-		TaskId:                      -1,
-		CrawlerCapacity:             0,
+		TaskId:                      0,
+		CrawlerTreadNum:             1,
 		MaxGetRequestNullTimeSecond: DEFAULT_REQ_MAX_NULL_TIME,
 	}
 	return conf

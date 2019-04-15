@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-13 22:51:20
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-14 16:57:03
+ * @Last Modified time: 2019-04-15 17:46:50
  */
 package message
 
@@ -22,6 +22,14 @@ type ResponseMsg struct {
 	Status uint32
 	Msg    string
 	Data   []byte
+}
+
+func NewResponseMsg(statue uint32 , msg string) *ResponseMsg{
+	resp := &ResponseMsg{
+		Status: 0,
+		Msg:    "succ",
+	}
+	return resp
 }
 
 func NewCommMsg(cmd uint32, data []byte) *CommMsg {
