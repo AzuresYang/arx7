@@ -18,6 +18,14 @@ import (
 )
 
 type HttpMethod string
+type ArxReqPriority uint32
+
+// 三种优先级
+const (
+	ARXREQ_PRIORITY_HIGH   ArxReqPriority = 1
+	ARXREQ_PRIORITY_MIDDLE ArxReqPriority = 2
+	ARXREQ_PRIORITY_LOW    ArxReqPriority = 3
+)
 
 var (
 	GET  HttpMethod = "GET"
@@ -32,18 +40,18 @@ const (
 
 type Temp map[string]interface{}
 type ArxRequest struct {
-	ProcerName      string        // 要使用的Procer,适配于解析规则
-	Url             string        // url
-	Header          http.Header   // http头
-	Method          string        // 请求方法， 使用大写
-	EnableCookie    bool          // 是否使用cookie
-	PostData        string        // post数据
-	Priority        int           // 该请求的优先级, 数字越大，优先级越高
-	TryTimes        int           // 重连次数
-	ConnTimeout     time.Duration // 链接超时
-	DownloadTimeout time.Duration // 下载超时
-	IDDownloader    int           // 下载器id
-	Temp            Temp          // 临时数据，给处理器processor用的
+	ProcerName      string         // 要使用的Procer,适配于解析规则
+	Url             string         // url
+	Header          http.Header    // http头
+	Method          string         // 请求方法， 使用大写
+	EnableCookie    bool           // 是否使用cookie
+	PostData        string         // post数据
+	Priority        ArxReqPriority // 请求的优先级, 有三种，高，中，低
+	TryTimes        int            // 重连次数
+	ConnTimeout     time.Duration  // 链接超时
+	DownloadTimeout time.Duration  // 下载超时
+	IDDownloader    int            // 下载器id
+	Temp            Temp           // 临时数据，给处理器processor用的
 	TempStrMap      map[string]string
 }
 
@@ -62,9 +70,6 @@ func (self *ArxRequest) Prepare() error {
 		self.Method = strings.ToUpper(self.Method)
 	}
 
-	if self.Priority < 0 {
-		self.Priority = 0
-	}
 	if self.TryTimes < 0 {
 		self.TryTimes = DEFALUT_TRY_TIMES
 	}
@@ -75,6 +80,13 @@ func (self *ArxRequest) Prepare() error {
 
 	if self.DownloadTimeout < 0 {
 		self.DownloadTimeout = DEFALUT_DOWNLOAD_TIMEOUT
+	}
+
+	// 优先级不在范围内，默认放到中优先级
+	if self.Priority != ARXREQ_PRIORITY_HIGH &&
+		self.Priority != ARXREQ_PRIORITY_MIDDLE &&
+		self.Priority != ARXREQ_PRIORITY_LOW {
+		self.Priority = ARXREQ_PRIORITY_MIDDLE
 	}
 	return nil
 }
@@ -115,9 +127,9 @@ func (self *ArxRequest) Clone() *ArxRequest {
 	return request
 }
 
-func (self *ArxRequest) Serialize() string {
-	json_byte, _ := json.Marshal(self)
-	return string(json_byte[:])
+func (self *ArxRequest) Serialize() (string, error) {
+	json_byte, err := json.Marshal(self)
+	return string(json_byte[:]), err
 }
 
 // 反序列化

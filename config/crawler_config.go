@@ -101,4 +101,4 @@ func GetFromFile(file string) *CrawlerConfig {
 	return nil
 }
 
-var CrawlerCfg *CrawlerConfig = BuildDefaultCrawlerConfig()
+
