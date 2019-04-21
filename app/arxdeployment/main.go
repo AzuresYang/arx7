@@ -2,15 +2,17 @@
  * @Author: rayou
  * @Date: 2019-04-21 11:31:53
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 21:19:04
+ * @Last Modified time: 2019-04-22 01:30:54
  */
-package arxdelpoyment
+package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -28,11 +30,18 @@ func main() {
 	app.Author = "AzureYang"
 	app.Email = "AzureYang@xxx.com"
 	app.Commands = []cli.Command{
+		// 开始
 		{
 			Name:      "start",
 			ShortName: "start",
-			Usage:     "start spider",
+			Usage:     "start spider task",
+			Action:    startSpider,
 			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
 				cli.StringFlag{
 					Name:  "config",
 					Value: "spider.json",
@@ -44,9 +53,9 @@ func main() {
 					Usage: "arx master port",
 				},
 			},
-			Action: startSpider,
 		},
 		{
+			// 生成默认配置
 			Name:      "genconf",
 			ShortName: "g",
 			Usage:     "generate config file",
@@ -64,15 +73,21 @@ func main() {
 			},
 			Action: createDefaultConf,
 		},
+		// 部署
 		{
 			Name:      "deployment",
-			ShortName: "d",
+			ShortName: "dep",
 			Usage:     "deployment spider",
 			Flags: []cli.Flag{
 				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: " spider task name",
+				},
+				cli.StringFlag{
 					Name:  "image",
 					Value: "",
-					Usage: "spider iamge",
+					Usage: "spider image",
 				},
 				cli.Uint64Flag{
 					Name:  "nodes",
@@ -80,10 +95,82 @@ func main() {
 					Usage: "num of the nodes",
 				},
 			},
-			Action: startSpider,
+			Action: deploymentSpider,
+		},
+		// 删除
+		{
+			Name:      "delete",
+			ShortName: "d",
+			Usage:     "delete spider task",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+			Action: deploymentSpider,
+		},
+		// 停止
+		{
+			Name:      "stop",
+			ShortName: "st",
+			Usage:     "stop spider",
+			Action:    stopSpider,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+		},
+		// 获取spider状态
+		{
+			Name:   "status",
+			Usage:  "get spider status",
+			Action: getSpiderStatus,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+		},
+		// 获取spider状态
+		{
+			Name:   "pod",
+			Usage:  "get pods",
+			Action: getPod,
+		},
+		// echo
+		{
+			Name:      "echo",
+			ShortName: "e",
+			Usage:     "echo spider",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+				cli.Uint64Flag{
+					Name:  "model",
+					Value: 1,
+					Usage: "1 is echo, 2 is echo redis",
+				},
+			},
+			Action: deploymentSpider,
 		},
 	}
 	app.Run(os.Args)
+}
+
+// 从kuberntet中获取service关联到的节点
+func getSpiderNodes(svc_name string) []string {
+	nodes := []string{"127.0.0.1:31002"}
+	return nodes
 }
 
 func startSpider(ctx *cli.Context) {
@@ -96,10 +183,11 @@ func startSpider(ctx *cli.Context) {
 	}
 	err = initRedis(conf)
 	if err != nil {
-		fmt.Printf("init redis fail:%s\n", err.Error())
+		fmt.Printf("redis[%s] init fail:%s\n", conf.TaskConf.RedisAddr, err.Error())
 		return
 	}
-	nodes := getSpiderNodes(conf.TaskConf.TaskName)
+	spider_name := ctx.String("spidername")
+	nodes := getSpiderNodes(spider_name)
 	if len(nodes) <= 0 {
 		fmt.Printf("not found spider nodes.please ensure had deployed spider task:%s\n", conf.TaskConf.TaskName)
 		return
@@ -133,12 +221,6 @@ func initRedis(conf *config.SpiderStartConfig) error {
 	return nil
 }
 
-// 从kuberntet中获取service关联到的节点
-func getSpiderNodes(svc_name string) []string {
-	nodes := []string{"127.0.0.1:31002"}
-	return nodes
-}
-
 func sendStartToMaster(conf *config.SpiderStartConfig, nodes []string) error {
 	fmt.Println("sending start info to arxmaster......")
 	start_info := message.SpiderStartMsg{}
@@ -168,11 +250,59 @@ func sendStartToMaster(conf *config.SpiderStartConfig, nodes []string) error {
 	return nil
 }
 
+// 命令行测试
+func getPod(ctx *cli.Context) {
+	cmd := "kubectl get pods"
+	ret, err := exec_shell(cmd)
+	checkErr(err, "get pods")
+	fmt.Println(ret)
+}
+
 // 发布程序
 func deploymentSpider(ctx *cli.Context) {
+	spider_name := ctx.String("spidername")
 	image := ctx.String("image")
 	node := ctx.Uint64("nodes")
-	fmt.Printf("%s,%d", image, node)
+	fmt.Printf("%s, %s,%d", spider_name, image, node)
+}
+
+// 删除Spider
+func deleteSpider(ctx *cli.Context) {
+
+}
+
+//  停止 stop
+func stopSpider(ctx *cli.Context) {
+	spider_name := ctx.String("spidername")
+	nodes := getSpiderNodes(spider_name)
+	ret := SendMessageToSpider(nodes, message.MSG_REQ_STOP_SPIDER, []byte(""), "stop spider")
+	for node, msg := range ret {
+		fmt.Printf("node:%s,    start result:%s\n", node, msg)
+	}
+}
+
+// 获取spider状态
+func getSpiderStatus(ctx *cli.Context) {
+	spider_name := ctx.String("spidername")
+	nodes := getSpiderNodes(spider_name)
+	ret := SendMessageToSpider(nodes, message.MSG_REQ_GET_SPIDER_INFO, []byte(""), "get spider status")
+	for node, msg := range ret {
+		fmt.Printf("node:%s,    start result:%s\n", node, msg)
+	}
+}
+
+// echo spider
+func echoSpider(ctx *cli.Context) {
+	spider_name := ctx.String("spidername")
+	nodes := getSpiderNodes(spider_name)
+	cmd := message.MSG_REG_ECHO
+	if ctx.Uint64("model") == 2 {
+		cmd = message.MSG_REG_ECHO_REDIS
+	}
+	ret := SendMessageToSpider(nodes, cmd, []byte(""), "echo spider")
+	for node, msg := range ret {
+		fmt.Printf("node:%s,    start result:%s\n", node, msg)
+	}
 }
 
 // 向spider发送操作信息
@@ -206,11 +336,6 @@ func SendMessageToSpider(nodes []string, cmd uint32, data []byte, comment string
 	return resp_result
 }
 
-// 删除Spider
-func deleteSpider(ctx *cli.Context) {
-
-}
-
 func createDefaultConf(ctx *cli.Context) {
 	dir := ctx.String("dir")
 	file := ctx.String("file")
@@ -236,4 +361,25 @@ func createDefaultConf(ctx *cli.Context) {
 		return
 	}
 	fmt.Printf("create config file succ:%s\n", file_path)
+}
+
+func exec_shell(s string) (string, error) {
+	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
+	cmd := exec.Command("/bin/bash", "-c", s)
+
+	//读取io.Writer类型的cmd.Stdout，再通过bytes.Buffer(缓冲byte类型的缓冲器)将byte类型转化为string类型(out.String():这是bytes类型提供的接口)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	//Run执行c包含的命令，并阻塞直到完成。  这里stdout被取出，cmd.Wait()无法正确获取stdin,stdout,stderr，则阻塞在那了
+	err := cmd.Run()
+	return out.String(), err
+}
+
+func checkErr(err error, info string) {
+	if err != nil {
+		fmt.Printf("%s:%s\n", info, err.Error())
+		// panic(me(err, info))
+		os.Exit(1)
+	}
 }

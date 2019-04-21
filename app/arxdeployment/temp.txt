@@ -1,0 +1,127 @@
+	{
+			// 生成默认配置
+			Name:      "genconf",
+			ShortName: "g",
+			Usage:     "generate config file",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "file",
+					Value: "spider.json",
+					Usage: "config file name",
+				},
+				cli.StringFlag{
+					Name:  "dir",
+					Value: "./",
+					Usage: "path to config file",
+				},
+			},
+			Action: createDefaultConf,
+		},
+		// 部署
+		{
+			Name:      "deployment",
+			ShortName: "dep",
+			Usage:     "deployment spider",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: " spider task name",
+				},
+				cli.StringFlag{
+					Name:  "image",
+					Value: "",
+					Usage: "spider image",
+				},
+				cli.Uint64Flag{
+					Name:  "nodes",
+					Value: 1,
+					Usage: "num of the nodes",
+				},
+			},
+			Action: deploymentSpider,
+		},
+		// 删除
+		{
+			Name:      "delete",
+			ShortName: "d",
+			Usage:     "delete spider task",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+			Action: deploymentSpider,
+		},
+		// 停止
+		{
+			Name:      "stop",
+			ShortName: "st",
+			Usage:     "stop spider",
+			Action:    stopSpider,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+		},
+		// 获取spider状态
+		{
+			Name:   "status",
+			Usage:  "get spider status",
+			Action: getSpiderStatus,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+			},
+		},
+		// echo
+		{
+			Name:      "echo",
+			ShortName: "e",
+			Usage:     "echo spider",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+				cli.Uint64Flag{
+					Name:  "model",
+					Value: 1,
+					Usage: "1 is echo, 2 is echo redis",
+				},
+			},
+			Action: deploymentSpider,
+		},
+{
+			// 开始任务
+			Name:      "start",
+			ShortName: "start",
+			Usage:     "start spider task",
+
+			Action: startSpider,
+        			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: "spider task name",
+				},
+				cli.StringFlag{
+					Name:  "config",
+					Value: "spider.json",
+					Usage: "spider config json file",
+				},
+				cli.StringFlag{
+					Name:  "port",
+					Value: "31001",
+					Usage: "arx master port",
+				},
+			},
