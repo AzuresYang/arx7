@@ -6,7 +6,10 @@
  */
 package processor
 
-import "github.com/AzuresYang/arx7/app/spider/downloader/context"
+import (
+	"github.com/AzuresYang/arx7/app/pipeline"
+	"github.com/AzuresYang/arx7/app/spider/downloader/context"
+)
 
 // 处理下载数据， 对需要解析不同页面，可以自己实现不同的处理器
 type Processor interface {
@@ -18,5 +21,5 @@ type Processor interface {
 	GetOneProcessor() Processor
 	Free()
 	// 返回错误码和处理消息
-	Process(*context.CommContext) (int, string)
+	Process(*context.CommContext) *pipeline.CollectData
 }

@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-14 17:25:13
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-15 21:04:22
+ * @Last Modified time: 2019-04-21 16:20:41
  */
 
 package arxlet
@@ -61,6 +61,7 @@ func (self *BaseTcpServer) Init(listenport string) error {
 		log.Error("tcp server listen tcp err：", err.Error())
 		return err
 	}
+	log.Infof("[BaseTcpServer]init listen addrss succ:%s\n", address)
 	return nil
 }
 

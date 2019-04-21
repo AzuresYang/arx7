@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-15 17:22:22
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-15 21:15:43
+ * @Last Modified time: 2019-04-21 21:06:49
  */
 
 package arxscheduler
@@ -36,10 +36,6 @@ func (self *ArxScheduler) Init(masterPort string) {
 func (self *ArxScheduler) GetSupportCmds() []uint32 {
 	cmds := []uint32{
 		message.MSG_ARXCMD_START_SPIDER,
-		message.MSG_ARXCMD_STOP_STOP,
-		message.MSG_ARXCMD_SCALE_STOP,
-		message.MSG_ARXCMD_DELTE_TASK,
-		message.MSG_ARXCMD_GET_SPIDER_INFO,
 	}
 	return cmds
 }
@@ -102,22 +98,24 @@ func (self *ArxScheduler) doStartSpider(nodeAddrs []string, cfg_data []byte) map
 		// 3.是否成功
 		go func(addr string) {
 			defer wg.Done()
+			log.Debugf("[%s] start send task to node:%s\n", code_info, addr)
 			err, spider_conn := arxlet.SendTcpMsgTimeoutWithConn(message.MSG_REQ_STAET_SPIDER, cfg_data, addr, 2*time.Second)
 			if err != nil {
 				log.Errorf("[%s] connect to spider fail:%s", code_info, err.Error())
 				start_result[addr] = "connect to spider fail:" + err.Error()
 				return
 			}
-
+			log.Debugf("[%s] node:%s, waiting response......\n", code_info, addr)
 			var resp *message.ResponseMsg
 			err, resp = arxlet.ParseResponseFromConn(spider_conn)
+			log.Debugf("[%s] node:%s, get response \n", code_info, addr)
 			if err != nil {
 				log.Errorf("[%s] parseResponse Error:%s", code_info, err.Error())
 				err_msg := "lost start info:" + err.Error()
 				start_result[addr] = err_msg
 				return
 			}
-			log.Infof("[%s] start spider.ret:%d, msg:%s", code_info, resp.Status, resp.Msg)
+			log.Infof("[%s] node[%s], start spider.ret:%d, msg:%s", code_info, addr, resp.Status, resp.Msg)
 			start_ret_msg := ""
 			if resp.Status != 0 {
 				start_ret_msg = resp.Msg

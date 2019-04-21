@@ -13,8 +13,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/AzuresYang/arx7/app/pipeline"
+	"github.com/AzuresYang/arx7/app/pipeline/output"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
 
 	"github.com/AzuresYang/arx7/app/spider/downloader/context"
@@ -39,7 +40,7 @@ func (self *DefaultProcessor) GetName() string {
 	return "default"
 }
 
-func findNewRequest(ctx *context.CommContext) {
+func findNewRequest(ctx *context.CommContext) *pipeline.CollectData {
 	flysnowRegexp := regexp.MustCompile(`<a href="http://www.xbiquge.la/([\d]+/[\d]+)/">(.+)</a></li>`)
 	response := ctx.Response
 	body, _ := ioutil.ReadAll(response.Body)
@@ -52,7 +53,7 @@ func findNewRequest(ctx *context.CommContext) {
 		if params != nil {
 			max_num--
 			if max_num <= 0 {
-				return
+				return nil
 			}
 			new_url := fmt.Sprintf("http://www.xbiquge.la/%s", params[1])
 			name := params[2]
@@ -61,7 +62,7 @@ func findNewRequest(ctx *context.CommContext) {
 			new_req.TempStrMap = make(map[string]string)
 			new_req.TempStrMap["title"] = name
 			new_req.TempStrMap["is_stop"] = "true"
-			request.RequestMgr.AddNeedGrabRequest(new_req, 1*time.Second)
+			request.RequestMgr.AddNeedGrabRequest(new_req)
 			log.Infof("new req：[%s|%s]", name, new_url)
 		}
 	}
@@ -70,37 +71,38 @@ func findNewRequest(ctx *context.CommContext) {
 		line := scanner.Text()
 		log.Infof("scanner read line:%s", line)
 	}
-
+	return nil
 }
-func saveXiaoShuo(ctx *context.CommContext) {
+func saveXiaoShuo(ctx *context.CommContext) *pipeline.CollectData {
 	file_dir := "E:/crawler_data/"
 	title := ctx.Request.TempStrMap["title"]
 	file_name := file_dir + fmt.Sprintf("%s.txt", title)
 	f, err := os.Create(file_name)
 	if err != nil {
 		log.Errorf("[procer|process]:create file[%s] error.", file_name)
-		return
+		return nil
 	}
 	response := ctx.Response
 	body, _ := ioutil.ReadAll(response.Body)
+	dfs_data := output.NewCollectFastDfsData()
+	dfs_data.Add("crawler_data", fmt.Sprintf("%s.txt", title), body)
 	bodystr := string(body)
 	f.WriteString(bodystr)
 	defer f.Close()
 	log.Infof("获得小说：%s", file_name)
+	return dfs_data.ToCollectData()
 }
-func (self *DefaultProcessor) Process(ctx *context.CommContext) (ret int, msg string) {
+func (self *DefaultProcessor) Process(ctx *context.CommContext) *pipeline.CollectData {
 	// log.Info("ready pro context:" + ctx.Request.Url)
 	log.WithFields(log.Fields{
 		"URL": ctx.Request.Url,
 		// "Data:": bodystr,
 	}).Debug("get data .ready proce")
-	ret = 0
-	msg = "procer succ"
 	is_stop := ctx.Request.TempStrMap["is_stop"]
 	if is_stop == "" {
-		findNewRequest(ctx)
+		return findNewRequest(ctx)
 	} else {
-		saveXiaoShuo(ctx)
+		return saveXiaoShuo(ctx)
 	}
 
 	// response := ctx.Response
@@ -109,7 +111,7 @@ func (self *DefaultProcessor) Process(ctx *context.CommContext) (ret int, msg st
 	// f.WriteString(bodystr)
 	// defer f.Close()
 
-	return ret, msg
+	return nil
 }
 
 func (self *DefaultProcessor) Free() {

@@ -30,7 +30,7 @@ const (
 	PHANTOMJS_TEMP               string        = CACHE_DIR // Surfer-Phantom下载器：js文件临时目录
 	DEFAULT_REQ_GET_TIMEOUT      time.Duration = 2 * time.Second
 	DEFAULT_REQ_IS_NULL_WAITTIME time.Duration = 500 * time.Millisecond
-	DEFAULT_REQ_MAX_NULL_TIME    time.Duration = 10 * time.Second // 获取req为空的时间最长时间，超过这个时间，则爬虫停止爬取
+	DEFAULT_REQ_MAX_NULL_TIME    time.Duration = 100 * time.Second // 获取req为空的时间最长时间，超过这个时间，则爬虫停止爬取
 )
 
 type CrawlerConfig struct {
@@ -100,5 +100,3 @@ func WriteToFile(conf *CrawlerConfig) error {
 func GetFromFile(file string) *CrawlerConfig {
 	return nil
 }
-
-

@@ -19,26 +19,32 @@ const (
 	default_redis_write_timeout  time.Duration = 2 * time.Second
 	default_redis_urlqueue_name  string        = "ArxUrlQueue"
 	default_redis_url_unique_set string        = "ArxReqUnique"
+	default_max_queue_len        int           = 100 // 管道中最多存在未处理请求
 )
 
 type RequestManager struct {
 	wait_push_req_queue chan *ArxRequest //等待推送到主服务的req无锁队列
 	redisPool           *redis.Pool
-	isDistribute        bool // 是否是分布式？默认是
+	isDistribute        bool // 是否是分布式，也就Redis
 }
 
 var RequestMgr = &RequestManager{
 	isDistribute: true,
 }
 
-func (self *RequestManager) Init(max_queue_len int, cfg *config.CrawlerTask) error {
+func NewRequestManager() *RequestManager {
+	return &RequestManager{
+		isDistribute: true,
+	}
+}
+func (self *RequestManager) Init(cfg *config.CrawlerTask) error {
 	code_info := "RequestManager.Init"
-	self.wait_push_req_queue = make(chan *ArxRequest, max_queue_len)
+	self.wait_push_req_queue = make(chan *ArxRequest, default_max_queue_len)
 	// 单机模式不需要链接redis
 	if !self.isDistribute {
 		return nil
 	}
-	err := testRedisConn(cfg.RedisAddr, cfg.RedisPassword)
+	err := self.testRedis(cfg.RedisAddr, cfg.RedisPassword)
 	if err != nil {
 		log.Errorf("[%s]test redis conn fail:%s", code_info, err.Error())
 		return err
@@ -55,15 +61,49 @@ func (self *RequestManager) Init(max_queue_len int, cfg *config.CrawlerTask) err
 			return redis.Dial("tcp", cfg.RedisAddr, pwd_option, write_option, read_option)
 		},
 	}
+	log.Infof("[%s]redis init succ, addr:%s", code_info, cfg.RedisAddr)
 	return nil
 }
 
-func testRedisConn(redisAddr string, pwd string) error {
+// 测试redis联通性
+func (self *RequestManager) testRedis(redisAddr string, pwd string) error {
 	pwd_option := redis.DialPassword(pwd)
 	c, err := redis.Dial("tcp", redisAddr, pwd_option)
-	c.Close()
+	if c != nil {
+		c.Close()
+		return nil
+	}
 	return err
 }
+
+// 清空redis队列
+func (self *RequestManager) ClearRedis(redisAddr string, pwd string) error {
+	unique_set := self.getRedisUniqueSetName()
+	pwd_option := redis.DialPassword(pwd)
+	c, err := redis.Dial("tcp", redisAddr, pwd_option)
+	if c != nil {
+		_, derr := c.Do("del", unique_set)
+		if derr != nil {
+			return errors.New(fmt.Sprintf("del unique set fail:%s", derr.Error()))
+		}
+		c.Close()
+	}
+	return err
+}
+
+func (self *RequestManager) SetKeyValue(redisAddr string, pwd string, key string, value string) error {
+	pwd_option := redis.DialPassword(pwd)
+	c, err := redis.Dial("tcp", redisAddr, pwd_option)
+	if c != nil {
+		_, derr := c.Do("set", key, value)
+		if derr != nil {
+			return errors.New(fmt.Sprintf("set redis fails:%s", derr.Error()))
+		}
+		c.Close()
+	}
+	return err
+}
+
 func (self *RequestManager) Start() {
 
 }
@@ -76,9 +116,7 @@ func (self *RequestManager) Stop() {
 func (self *RequestManager) getRequestWhenOneInstance(timeout time.Duration) (req *ArxRequest) {
 	code_info := "RequestManager.getRequestWhenOneInstance"
 	click := time.After(timeout)
-	log.Debugf("[%s]", code_info)
-	c := self.redisPool.Get()
-	defer c.Close()
+	log.Debugf("[%s] get request", code_info)
 	select {
 	case req = <-self.wait_push_req_queue:
 		return req
@@ -101,7 +139,7 @@ func (self *RequestManager) getRedisUrlQueueName(p ArxReqPriority) string {
 	return fmt.Sprintf("%d::%s::%s", task_id, default_redis_urlqueue_name, priority)
 }
 
-func (self *RequestManager) getRedisUniqueSetName(req *ArxRequest) string {
+func (self *RequestManager) getRedisUniqueSetName() string {
 	var task_id uint32 = runtime.G_CrawlerCfg.TaskConf.TaskId
 	return fmt.Sprintf("%d::%s", task_id, default_redis_url_unique_set)
 }
@@ -114,6 +152,7 @@ func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {
 	// 分布式模式下， 从redis获取链接
 	conn := self.redisPool.Get()
 	defer conn.Close()
+	// 超时设置，未满1s的，设置成1s(redis 超时单位)
 	timeout_sec := timeout.Seconds()
 	if timeout_sec < 1 {
 		timeout_sec = 1
@@ -121,7 +160,7 @@ func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {
 	high_queue := self.getRedisUrlQueueName(ARXREQ_PRIORITY_HIGH)
 	middle_queue := self.getRedisUrlQueueName(ARXREQ_PRIORITY_MIDDLE)
 	lower_queue := self.getRedisUrlQueueName(ARXREQ_PRIORITY_LOW)
-	// 从高到底开始获取
+	// 从高到低的优先级开始获取链接
 	reply, err := redis.Values(conn.Do("BLPOP", high_queue, middle_queue, lower_queue, timeout_sec))
 	if err != nil {
 		log.Errorf("[%s] blpop request for redis fail:%s", code_info, err.Error())
@@ -167,7 +206,7 @@ func (self *RequestManager) AddNeedGrabRequest(req *ArxRequest) error {
 		log.Errorf("[%s] req serialize fail.", code_info)
 		return err
 	}
-	unique_set := self.getRedisUniqueSetName(req)
+	unique_set := self.getRedisUniqueSetName()
 	unique_id := self.calRequestUniqueId(req)
 
 	// 查看请求之前是否已经存在。已存在则不添加请求到redis里
@@ -190,6 +229,7 @@ func (self *RequestManager) AddNeedGrabRequest(req *ArxRequest) error {
 		log.Errorf("[%s]%s", code_info, err_msg)
 		return errors.New(err_msg)
 	}
+	log.Debugf("[%s]Add new url succ:%s", code_info, req.Url)
 	return nil
 }
 

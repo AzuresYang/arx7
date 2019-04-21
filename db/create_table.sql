@@ -7,5 +7,5 @@ create table if not exists `monitor_data`(
     `value` bigint not NULL,
     `ip` varchar(20),
     `time` timestamp not null,
-    index(`svcid`, `metric`)
+    index(`svcid`, `metric`,`time`, `classfy`)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;

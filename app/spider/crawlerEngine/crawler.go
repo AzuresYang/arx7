@@ -9,6 +9,7 @@ package crawlerEngine
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"time"
 
 	"github.com/AzuresYang/arx7/app/pipeline"
@@ -16,6 +17,7 @@ import (
 	"github.com/AzuresYang/arx7/app/spider/downloader"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
 	"github.com/AzuresYang/arx7/config"
+	"github.com/AzuresYang/arx7/runtime"
 	"github.com/AzuresYang/arx7/util/record"
 	log "github.com/sirupsen/logrus"
 )
@@ -76,6 +78,7 @@ func (self *crawler) Init(dl downloader.Downloader, pipe pipeline.Pipeline) erro
 }
 
 func (self *crawler) Stop() {
+	log.Debugf("[crawler.Stop][%d] crawler stop", self.id)
 	self.if_stop = true
 }
 
@@ -90,7 +93,7 @@ func (self *crawler) Run() {
 	//	log.Errorf("crawler init fail.err:%s", err.Error())
 	//	return
 	//}
-	self.if_stop = true
+	self.if_stop = false
 	self.run()
 	self.Stop()
 }
@@ -98,11 +101,13 @@ func (self *crawler) Run() {
 func (self *crawler) run() {
 	// self.Init()+
 	// 不断获取链接，下载，处理
-	var max_req_null_times int = int(config.CrawlerCfg.TaskConf.MaxGetRequestNullTimeSecond /
-		config.CrawlerCfg.RequestGetTimeOut)
+	// 有点混乱
+	log.Debugf("crawler[%d] start run.if_stop:%+v", self.id, self.if_stop)
+	var max_req_null_times int = int(runtime.G_CrawlerCfg.TaskConf.MaxGetRequestNullTimeSecond /
+		runtime.G_CrawlerCfg.RequestGetTimeOut)
 	get_req_null_times := 0
 	for !self.if_stop {
-		req := request.RequestMgr.GetRequest(config.CrawlerCfg.RequestGetTimeOut)
+		req := request.RequestMgr.GetRequest(runtime.G_CrawlerCfg.RequestGetTimeOut)
 		if req == nil {
 			// 太长时间没有新链接的话，自动停止工作
 			get_req_null_times += 1
@@ -124,6 +129,8 @@ func (self *crawler) run() {
 }
 
 func (self *crawler) processRequest(req *request.ArxRequest) {
+	code_info := reflect.TypeOf(self).String()
+	log.Debugf("[%s][%d] crawler get request:%s", code_info, self.id, req.Url)
 	procer := processor.Manager.GetProcessor(req.ProcerName)
 	is_download_succ := false
 	// 统计下载情况
@@ -150,8 +157,12 @@ func (self *crawler) processRequest(req *request.ArxRequest) {
 		return
 	}
 	log.Info("download succ.URL:" + req.Url)
-	ret, msg := procer.Process(ctx)
-	log.Info(fmt.Sprintf("process ret[%d|%s], URL:[%s]", ret, msg, req.Url))
+	cdata := procer.Process(ctx)
+	if cdata != nil {
+		self.pipeline.CollectData(cdata)
+	} else {
+		log.Tracef("[%s] not data to pipeline", code_info)
+	}
 }
 
 func (self *crawler) sleep() {

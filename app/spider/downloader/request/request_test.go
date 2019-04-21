@@ -2,22 +2,24 @@
  * @Author: rayou
  * @Date: 2019-03-26 21:44:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-17 01:31:54
+ * @Last Modified time: 2019-04-21 15:00:29
  */
 package request
 
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/AzuresYang/arx7/config"
 	"github.com/garyburd/redigo/redis"
+	log "github.com/sirupsen/logrus"
 )
 
 func buildCfg() *config.CrawlerTask {
 	cfg := &config.CrawlerTask{
 		RedisAddr:     "193.112.68.221:6379",
-		RedisPassword: "Redis@20190416",
+		RedisPassword: "Redis@2019416",
 	}
 	return cfg
 }
@@ -42,17 +44,33 @@ func TestReqSerilize(t *testing.T) {
 }
 
 func TestReqManagerPushQueue(t *testing.T) {
-	// req_mgr := RequestManager{}
-	// req_mgr.Init(2)
-	// var src_req = NewArxRequest("http://www.baidu.com")
-	// req_mgr.AddNeedGrabRequest(&src_req, 2*time.Second)
-	// new_req := req_mgr.GetRequest()
-	// if new_req == nil {
-	// 	t.Error("req is lost")
-	// 	return
-	// }
-	// ret_json := new_req.Serialize()
-	// fmt.Println("ret is:", ret_json)
+	log.SetLevel(log.TraceLevel)
+	req_mgr := RequestMgr
+	if req_mgr == nil {
+		t.Error("req Mgr is nil")
+		return
+	}
+	cfg := buildCfg()
+	fmt.Printf("ready init\n")
+	req_mgr.Init(cfg)
+	fmt.Printf("ready add req")
+	var src_req = NewArxRequest("http://www.baidu.com")
+	req_mgr.AddNeedGrabRequest(src_req)
+	new_req := req_mgr.GetRequest(2 * time.Second)
+	if new_req == nil {
+		t.Error("no req")
+		return
+	}
+	fmt.Printf("ret is:%+v", new_req)
+
+	t.Log("gogogo")
+}
+
+func TestDelKey(t *testing.T) {
+	log.SetLevel(log.TraceLevel)
+	c := getConn()
+	defer c.Close()
+	c.Do("del", "0::ArxReqUnique")
 	t.Log("gogogo")
 }
 

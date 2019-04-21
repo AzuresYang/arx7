@@ -88,6 +88,8 @@ func (self *monitorCollector) Run() {
 }
 
 func (self *monitorCollector) AddMonitorPkg(pkg *arxmonitor.MonitorMsgPkg) {
+	code_info := "MonitorCollector.AddMonitorPkg"
+	log.Tracef("[%s]recv monitor pkg:%+v", pkg)
 	self.msgpkgs <- pkg
 }
 
