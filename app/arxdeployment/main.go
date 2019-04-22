@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/AzuresYang/arx7/app/message"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
 	"github.com/AzuresYang/arx7/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -94,8 +96,32 @@ func main() {
 					Value: 1,
 					Usage: "num of the nodes",
 				},
+				cli.Uint64Flag{
+					Name:  "port",
+					Value: 31000,
+					Usage: "the open listen port",
+				},
 			},
 			Action: deploymentSpider,
+		},
+		// 扩缩容
+		{
+			Name:      "scale",
+			ShortName: "s",
+			Usage:     "scale spider nodes",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "spidername",
+					Value: "default-spider",
+					Usage: " spider task name",
+				},
+				cli.Uint64Flag{
+					Name:  "nodes",
+					Value: 1,
+					Usage: "target num of the nodes",
+				},
+			},
+			Action: scaleSpider,
 		},
 		// 删除
 		{
@@ -109,7 +135,7 @@ func main() {
 					Usage: "spider task name",
 				},
 			},
-			Action: deploymentSpider,
+			Action: deleteSpider,
 		},
 		// 停止
 		{
@@ -169,7 +195,56 @@ func main() {
 
 // 从kuberntet中获取service关联到的节点
 func getSpiderNodes(svc_name string) []string {
-	nodes := []string{"127.0.0.1:31002"}
+	// 获取port的方式
+	cmd := fmt.Sprintf("kubectl get service | grep -w \"%s\" | awk -F \" \" '{print $4}'", svc_name)
+	ret_line, err := exec_shell(cmd)
+	fmt.Printf("service ret:%s", ret_line)
+	if err != nil {
+		fmt.Printf("get node info %s fail:%s\n", svc_name, err.Error())
+		return nil
+	}
+	if len(ret_line) <= 0 {
+		fmt.Printf("not found service:%s\n", svc_name)
+		return nil
+	}
+	temp := strings.Split(ret_line, "/")
+	// 按照规则是80:port/TCP的样式, 两次切割都不需要符合
+	if len(temp) != 2 {
+		fmt.Printf("[%s] get node info fail:%s\n", svc_name, ret_line)
+		return nil
+	}
+	if len(strings.Split(temp[0], ":")) != 2 {
+		fmt.Printf("[%s] get node info fail:%s\n", svc_name, ret_line)
+		return nil
+	}
+	port := strings.Split(temp[0], ":")[1]
+
+	// 获取ip地址
+	cmd = fmt.Sprintf("kubectl get po -o wide | grep  \"%s-\" | awk -F \" \" '{print $7}'", svc_name)
+	ret_line, err = exec_shell(cmd)
+	fmt.Printf("service ret:%s\n", ret_line)
+	if err != nil {
+		fmt.Printf("[%s]get pod info fail:%s\n", svc_name, err.Error())
+		return nil
+	}
+	if len(ret_line) <= 0 {
+		fmt.Printf("[%s] not found deploy instance .ip is zero.\n", svc_name)
+		return nil
+	}
+	ips := strings.Split(ret_line, "\n")
+	nodes := []string{}
+	for _, ip := range ips {
+		if len(ip) <= 0 {
+			continue
+		}
+		if len(strings.Split(ip, ".")) != 4 {
+			fmt.Printf("[%s]get pod ip fail:%s\n", svc_name, ret_line)
+			return nil
+		}
+		addr := fmt.Sprintf("%s:%s", ip, port)
+		nodes = append(nodes, addr)
+	}
+	log.Infof("[%s]get nodes:%+v\n", svc_name, nodes)
 	return nodes
 }
 
@@ -252,7 +327,7 @@ func sendStartToMaster(conf *config.SpiderStartConfig, nodes []string) error {
 
 // 命令行测试
 func getPod(ctx *cli.Context) {
-	cmd := "kubectl get pods"
+	cmd := "kubectl get po -o wide"
 	ret, err := exec_shell(cmd)
 	checkErr(err, "get pods")
 	fmt.Println(ret)
@@ -262,19 +337,77 @@ func getPod(ctx *cli.Context) {
 func deploymentSpider(ctx *cli.Context) {
 	spider_name := ctx.String("spidername")
 	image := ctx.String("image")
+	// node := ctx.Uint64("nodes")
+	port := ctx.Uint64("port")
+	fmt.Printf("deployment spider start....\n")
+	fmt.Printf("spider[%s], image[%s],port[%d]\n", spider_name, image, port)
+	if len(image) <= 0 {
+		fmt.Println("image is null.")
+		return
+	}
+	cmd := fmt.Sprintf("kubectl run %s --image=%s --port %d", spider_name, image, port)
+	ret, err := exec_shell(cmd)
+	if err != nil {
+		fmt.Printf("[error]run image fail.%s\n", err.Error())
+		return
+	}
+
+	// 服务暴露
+	cmd = fmt.Sprintf("kubectl expose deploy %s --port %d --target-port %d --type NodePort", spider_name, port, port)
+	ret, err = exec_shell(cmd)
+	fmt.Println(ret)
+	cmd = fmt.Sprintf("kubectl get po -o wide | grep -w %s", spider_name)
+	ret, err = exec_shell(cmd)
+	fmt.Println("deployment ret:")
+	fmt.Println(ret)
+	// 这里应该加一个检查是否发布成功的东西
+	// fmt.Printf("%s, %s,%d", spider_name, image, node)
+}
+
+// 扩缩容Spider
+func scaleSpider(ctx *cli.Context) {
+	spider_name := ctx.String("spidername")
 	node := ctx.Uint64("nodes")
-	fmt.Printf("%s, %s,%d", spider_name, image, node)
+	fmt.Printf("scale spider [%s] nodes  to %d\n", spider_name, node)
+	cmd := fmt.Sprintf("kubectl scale deployment %s --replicas=%d", spider_name, node)
+	ret, err := exec_shell(cmd)
+	if err != nil {
+		fmt.Printf("[error]%s\n", err.Error())
+		return
+	}
+	fmt.Println(ret)
 }
 
 // 删除Spider
 func deleteSpider(ctx *cli.Context) {
-
+	spider_name := ctx.String("spidername")
+	fmt.Printf("delete spider [%s]......\n", spider_name)
+	// 停止所有pod
+	cmd := fmt.Sprintf("kubectl scale deployment %s --replicas=0", spider_name)
+	ret, err := exec_shell(cmd)
+	if err != nil {
+		fmt.Printf("[error]stop all pods fail.%s\n", err.Error())
+		return
+	}
+	fmt.Printf("stop all pod ret:%s\n", ret)
+	cmd = fmt.Sprintf("kubectl delete deployment %s", spider_name)
+	ret, _ = exec_shell(cmd)
+	fmt.Println(ret)
+	cmd = fmt.Sprintf("kubectl delete service %s", spider_name)
+	ret, _ = exec_shell(cmd)
+	fmt.Println(ret)
+	fmt.Println("delete down.")
 }
 
 //  停止 stop
 func stopSpider(ctx *cli.Context) {
 	spider_name := ctx.String("spidername")
+	fmt.Printf("start stop spider:%s\n", spider_name)
 	nodes := getSpiderNodes(spider_name)
+	if nodes == nil {
+		fmt.Println("get nodes addr fail.")
+		return
+	}
 	ret := SendMessageToSpider(nodes, message.MSG_REQ_STOP_SPIDER, []byte(""), "stop spider")
 	for node, msg := range ret {
 		fmt.Printf("node:%s,    start result:%s\n", node, msg)
@@ -366,7 +499,7 @@ func createDefaultConf(ctx *cli.Context) {
 func exec_shell(s string) (string, error) {
 	//函数返回一个*Cmd，用于使用给出的参数执行name指定的程序
 	cmd := exec.Command("/bin/bash", "-c", s)
-
+	log.Infof("bash cmd:%s", s)
 	//读取io.Writer类型的cmd.Stdout，再通过bytes.Buffer(缓冲byte类型的缓冲器)将byte类型转化为string类型(out.String():这是bytes类型提供的接口)
 	var out bytes.Buffer
 	cmd.Stdout = &out
