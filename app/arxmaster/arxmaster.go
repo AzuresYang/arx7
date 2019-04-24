@@ -2,18 +2,19 @@
  * @Author: rayou
  * @Date: 2019-04-13 11:25:29
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 22:22:07
+ * @Last Modified time: 2019-04-24 23:03:23
  */
 package arxmaster
 
 import (
-	"github.com/AzuresYang/arx7/app/arxlet"
 	"encoding/json"
+
+	"github.com/AzuresYang/arx7/app/arxlet"
 	"github.com/AzuresYang/arx7/app/arxmaster/arxscheduler"
-	"github.com/AzuresYang/arx7/app/message"
 	"github.com/AzuresYang/arx7/app/arxmonitor"
 	"github.com/AzuresYang/arx7/app/arxmonitor/monitorCollector"
-	"github.com/AzuresYang/arx7/db"
+	"github.com/AzuresYang/arx7/app/message"
+	"github.com/AzuresYang/arx7/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,13 +22,13 @@ type ArxMaster struct {
 	server     *arxlet.BaseTcpServer
 	listenPort string
 	scheduler  arxscheduler.ArxScheduler
-	mc  *monitorCollector.MonitorCollector // 监控组件
+	mc         *monitorCollector.MonitorCollector // 监控组件
 }
 
 func NewArxMaster() *ArxMaster {
 	master := &ArxMaster{
 		server: arxlet.NewBaseTcpServer(),
-		mc : monitorCollector.New(1000),
+		mc:     monitorCollector.New(1000),
 	}
 	return master
 }
@@ -44,12 +45,12 @@ func (self *ArxMaster) Init(listenport string) error {
 	cmds := self.scheduler.GetSupportCmds()
 	self.server.RegisterHandler(cmds, &self.scheduler)
 	cmds = self.GetSupportCmds()
-	self.server.RegisterHandler(cmds,self)
+	self.server.RegisterHandler(cmds, self)
 	return nil
 }
 
 // 开始收集监控
-func (self *ArxMaster) StartMonitorCollector(db_cfg *db.MysqlConfig){
+func (self *ArxMaster) StartMonitorCollector(db_cfg *config.MysqlConfig) {
 	self.mc.Start(db_cfg)
 }
 
@@ -60,7 +61,7 @@ func (self *ArxMaster) Run() {
 func (self *ArxMaster) Stop() {
 }
 
-func (self *ArxMaster)GetSupportCmds()[]uint32{
+func (self *ArxMaster) GetSupportCmds() []uint32 {
 	return []uint32{
 		message.MSG_MONITOR_INFO,
 	}
@@ -78,8 +79,8 @@ func (self *ArxMaster) HandlerEvent(ctx *arxlet.ConnContext) {
 		log.Tracef("[%s] [%s]get monitor info.", code_info, client)
 		pkg := &arxmonitor.MonitorMsgPkg{}
 		err := json.Unmarshal(ctx.Msg.Data, pkg)
-		if err != nil{
-			log.Errorf("[%s] [%s]unmarshal MonitorPkg fail.",code_info, client)
+		if err != nil {
+			log.Errorf("[%s] [%s]unmarshal MonitorPkg fail.", code_info, client)
 			return
 		}
 		self.mc.AddMonitorPkg(pkg)

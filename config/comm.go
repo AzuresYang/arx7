@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-03 20:37:41
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 15:53:14
+ * @Last Modified time: 2019-04-24 23:06:42
  */
 package config
 
@@ -31,6 +31,11 @@ type SpiderStartConfig struct {
 	TaskConf   CrawlerTask // 任务配置
 	ProcerName string      // 处理器名称
 	Urls       []string    // 原始URL
+}
+
+type MasterConfig struct {
+	MysqlConf  MysqlConfig
+	ListenPort string
 }
 
 func WriteConfigToFileJson(dir string, fileName string, conf interface{}) error {

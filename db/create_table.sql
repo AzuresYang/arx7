@@ -6,6 +6,6 @@ create table if not exists `monitor_data`(
     `classfy` int not NULL default 0,
     `value` bigint not NULL,
     `ip` varchar(20),
-    `time` timestamp not null,
+    `time` bigint,
     index(`svcid`, `metric`,`time`, `classfy`)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-11 19:00:44
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 22:13:30
+ * @Last Modified time: 2019-04-24 23:36:45
  */
 
 package monitorCollector
@@ -13,7 +13,8 @@ import (
 	"time"
 
 	"github.com/AzuresYang/arx7/app/arxmonitor"
-	"github.com/AzuresYang/arx7/db"
+	"github.com/AzuresYang/arx7/config"
+	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,7 @@ type MonitorCollector struct {
 	ifStop  bool
 	msgpkgs chan *arxmonitor.MonitorMsgPkg
 	savers  []*msgsaver
-	dbCfg   *db.MysqlConfig
+	dbCfg   *config.MysqlConfig
 }
 
 func New(maxPkgs int) *MonitorCollector {
@@ -43,7 +44,7 @@ func New(maxPkgs int) *MonitorCollector {
 	}
 	return c
 }
-func (self *MonitorCollector) Start(db_cfg *db.MysqlConfig) error {
+func (self *MonitorCollector) Start(db_cfg *config.MysqlConfig) error {
 	path := strings.Join([]string{db_cfg.UserName, ":", db_cfg.Password, "@tcp(", db_cfg.Ip, ":",
 		string(db_cfg.Port), ")/", db_cfg.DbName, "?charset=", db_cfg.Charset}, "")
 	var err error
@@ -52,6 +53,7 @@ func (self *MonitorCollector) Start(db_cfg *db.MysqlConfig) error {
 		log.Errorf("[MonitorCollector.Start] Open mysql error:%s", err.Error())
 		return err
 	}
+	log.Debugf("[MonitorCollector.Start]config :%+v", db_cfg)
 	// 设置链接最大空闲时间
 	self.db.SetConnMaxLifetime(100 * time.Second)
 	// 设置上数据库最大闲置连接数
@@ -85,7 +87,9 @@ func (self *MonitorCollector) IfStop() bool {
 func (self *MonitorCollector) Run() {
 	// 启动每一个数据库交互线程
 	self.ifStop = false
+	log.Infof("[MonitorCollecotr.Run]saver thread is:%d", len(self.savers))
 	for i, _ := range self.savers {
+		self.savers[i].ifStop = false
 		go self.savers[i].doSaveMonitorMsg(self.msgpkgs)
 	}
 }
@@ -93,7 +97,7 @@ func (self *MonitorCollector) Run() {
 func (self *MonitorCollector) AddMonitorPkg(pkg *arxmonitor.MonitorMsgPkg) {
 	code_info := "MonitorCollector.AddMonitorPkg"
 	log.Tracef("[%s]recv monitor pkg:%+v", code_info, pkg)
-	if !self.ifStop {
+	if self.ifStop {
 		return
 	}
 	self.msgpkgs <- pkg

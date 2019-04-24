@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-22 19:11:44
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-22 23:26:20
+ * @Last Modified time: 2019-04-24 23:42:34
  */
 package main
 
@@ -15,6 +15,7 @@ import (
 	"github.com/AzuresYang/arx7/app/arxmaster"
 	"github.com/AzuresYang/arx7/app/processor"
 	"github.com/AzuresYang/arx7/app/spider"
+	"github.com/AzuresYang/arx7/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -73,6 +74,18 @@ func main() {
 				},
 			},
 		},
+		// 作为spider启动
+		{
+			Name:  "config",
+			Usage: "generate config",
+			Subcommands: []cli.Command{
+				{
+					Name:   "master",
+					Usage:  "generate master default config",
+					Action: createMasterConfig,
+				},
+			},
+		},
 	}
 	app.Run(os.Args)
 }
@@ -113,6 +126,20 @@ func startAsSpider(ctx *cli.Context) {
 	}
 	fmt.Println("----start arx7 spider succ----")
 	spider.Run()
+}
+
+func createMasterConfig(ctx *cli.Context) {
+	cfg := &config.MasterConfig{}
+	cfg.MysqlConf = *config.NewMysqlConfig()
+	dir := "./"
+	file_name := "master.json"
+	err := config.WriteConfigToFileJson(dir, file_name, cfg)
+	if err != nil {
+		fmt.Printf("create config fail:%s\n", err.Error())
+		return
+	}
+	file_path := dir + "/" + file_name
+	fmt.Printf("create config file succ:%s\n", file_path)
 }
 
 // 运行前初始化

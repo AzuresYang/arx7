@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-21 11:31:53
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 22:28:35
+ * @Last Modified time: 2019-04-24 23:20:30
  */
 package arxdeployment
 
@@ -496,7 +496,7 @@ func createDefaultConf(ctx *cli.Context) {
 		Urls:       []string{"http://www.baidu.com", "http://www.xbiquge.la/paihangbang/"},
 	}
 	file_path := dir + "/" + file
-	err := config.WriteConfigToFileJson(dir, file_path, conf)
+	err := config.WriteConfigToFileJson(dir, file, conf)
 	if err != nil {
 		fmt.Printf("create config fail:%s\n", err.Error())
 		return

@@ -2,10 +2,10 @@
  * @Author: rayou
  * @Date: 2019-04-11 19:59:07
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-11 20:43:27
+ * @Last Modified time: 2019-04-24 23:04:10
  */
 
-package db
+package config
 
 const (
 	default_userName        = "root"
@@ -30,7 +30,6 @@ type MysqlConfig struct {
 	MaxIdleConns    int
 	TaskNum         int
 }
-
 
 func NewMysqlConfig() *MysqlConfig {
 	cfg := &MysqlConfig{
