@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-30 09:34:25
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-10 02:47:36
+ * @Last Modified time: 2019-04-22 23:53:07
  */
 package processor
 
@@ -80,7 +80,6 @@ func saveXiaoShuo(ctx *context.CommContext) *pipeline.CollectData {
 	f, err := os.Create(file_name)
 	if err != nil {
 		log.Errorf("[procer|process]:create file[%s] error.", file_name)
-		return nil
 	}
 	response := ctx.Response
 	body, _ := ioutil.ReadAll(response.Body)

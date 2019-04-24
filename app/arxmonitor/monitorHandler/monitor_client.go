@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-07 17:15:03
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-15 21:27:30
+ * @Last Modified time: 2019-04-24 22:23:34
  */
 
 package monitorHandler
@@ -10,7 +10,6 @@ package monitorHandler
 import (
 	"container/list"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -22,10 +21,10 @@ import (
 )
 
 const (
-	default_msg_send_num           int           = 50  // 默认最大监控数量发送
-	default_msg_send_time          int64         = 300 // 默认发送时间
-	default_msg_send_time_duration time.Duration = 5 * time.Second
-	default_max_msg_num                          = 1000 // chan 最多存多少个监控数据
+	default_msg_send_num           int           = 5               // 默认最大监控数量发送
+	default_msg_send_time          int64         = 300             // 默认发送时间
+	default_msg_send_time_interval time.Duration = 5 * time.Second // 测试的时候用5s
+	default_max_msg_num                          = 1000            // chan 最多存多少个监控数据
 )
 
 type (
@@ -43,34 +42,32 @@ type (
 		m                   sync.Mutex
 		MsgList             *list.List
 		Msgs                chan *arxmonitor.MonitorMsg
-		MaxMsgSendNum       int   // 达到这个数字之后就立刻开始发送监控数据
-		MsgSendTime         int64 // 多久开始发送一次监控数据
-		MsgSendTimeDuration time.Duration
+		MaxMsgSendNum       int // 达到这个数字之后就立刻开始发送监控数据
+		MsgSendTimeInterval time.Duration
 		LastMsgSendTime     int64
 		If_Stop             bool
 	}
 )
 
-var monitor_handler *monitorHandler
+var monitor_handler *monitorHandler = &monitorHandler{
+	MsgList:             list.New(),
+	MaxMsgSendNum:       default_msg_send_num,
+	Msgs:                make(chan *arxmonitor.MonitorMsg, default_max_msg_num),
+	MsgSendTimeInterval: default_msg_send_time_interval,
+	LastMsgSendTime:     0,
+}
 
 func InitMonitorHandler(masterAddr string, svcid uint32) error {
-	monitor_handler = &monitorHandler{
-		MasterAddr:          masterAddr,
-		SvcId:               svcid,
-		MsgList:             list.New(),
-		MaxMsgSendNum:       default_msg_send_num,
-		Msgs:                make(chan *arxmonitor.MonitorMsg, default_max_msg_num),
-		MsgSendTime:         default_msg_send_time,
-		MsgSendTimeDuration: default_msg_send_time_duration,
-		LastMsgSendTime:     0,
-	}
+	monitor_handler.MasterAddr = masterAddr
+	monitor_handler.SvcId = svcid
 	local_ip, err := httpUtil.GetLocalIp()
 	if err != nil {
 		log.Error("cant get local ip")
 		local_ip = "127.0.0.1"
 	}
 	monitor_handler.LocalIp = local_ip
-	fmt.Println("start send monitor msg")
+	log.Infof("[MonitorHandler]start send monitor msg")
+	monitor_handler.If_Stop = false
 	go loopSendMsg()
 	return nil
 }
@@ -84,8 +81,9 @@ func loopSendMsg() {
 	log.Info("end send monitor msg")
 }
 
+// 定期或者达到一定数量就发送监控消息
 func collectMsg() {
-	click := time.After(monitor_handler.MsgSendTimeDuration)
+	click := time.After(monitor_handler.MsgSendTimeInterval)
 	for {
 		select {
 		case msg := <-monitor_handler.Msgs:
@@ -136,7 +134,8 @@ func doSendMsg(pkg *arxmonitor.MonitorMsgPkg) {
 	}
 	err = arxlet.SendTcpMsgTimeout(message.MSG_MONITOR_INFO, data, monitor_handler.MasterAddr, 5*time.Second)
 	if err != nil {
-		log.Errorf("[%s] send msg pkg fail.", code_info)
+		log.Errorf("[%s] send msg pkg fail:%s", code_info, err.Error())
+		return
 	}
 	log.Tracef("[%s] send monitor msg pkg succ.", code_info)
 }
@@ -178,7 +177,11 @@ func SetWithClassfy(metric uint32, classfy uint32, num uint32) {
 	addMonitorMsg(msg)
 }
 
+// 没有启动的时候不会添加监控数据
 func addMonitorMsg(msg *arxmonitor.MonitorMsg) {
+	if monitor_handler.If_Stop {
+		return
+	}
 	monitor_handler.Msgs <- msg
 	/*
 		// 到达发送数量或者发送时间

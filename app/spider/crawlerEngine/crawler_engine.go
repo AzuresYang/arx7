@@ -2,20 +2,22 @@
  * @Author: rayou
  * @Date: 2019-04-14 20:42:23
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-15 21:28:39
+ * @Last Modified time: 2019-04-24 22:35:59
  */
 package crawlerEngine
 
 import (
 	"errors"
-
 	"reflect"
+	"time"
 
+	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
 	"github.com/AzuresYang/arx7/app/pipeline/output"
 	"github.com/AzuresYang/arx7/app/spider/downloader"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
 	"github.com/AzuresYang/arx7/app/status"
 	"github.com/AzuresYang/arx7/config"
+	"github.com/AzuresYang/arx7/util/timer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,6 +26,7 @@ type CrawlerEngine struct {
 	crawlerNum    int
 	state         int
 	fastDfsOutput output.OutputFastDfs
+	heartTimer    *timer.Timer
 }
 
 func NewCrawlerEngine(crawlerNum int) *CrawlerEngine {
@@ -35,6 +38,7 @@ func NewCrawlerEngine(crawlerNum int) *CrawlerEngine {
 		crawlerNum:  crawlerNum,
 		state:       status.STOP,
 	}
+	engine.heartTimer = timer.New()
 	return engine
 }
 
@@ -53,6 +57,10 @@ func (self *CrawlerEngine) Init(cfg *config.CrawlerTask) error {
 		return errors.New("init output to fast dfs fail")
 	}
 	log.Info("CralerEngine init succ")
+	// 每10s上报一次引擎运行心跳
+	self.heartTimer.RunTask(10*time.Second, func() {
+		monitorHandler.AddOne(status.MONI_SYS_HEART_ENGINE)
+	})
 	// 初始化一些东西，比如requestMgr的
 	return nil
 }

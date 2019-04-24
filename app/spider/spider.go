@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-02 19:51:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 21:17:10
+ * @Last Modified time: 2019-04-24 22:36:00
  */
 package spider
 
@@ -10,16 +10,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AzuresYang/arx7/app/arxlet"
 	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
 	"github.com/AzuresYang/arx7/app/message"
+	"github.com/AzuresYang/arx7/app/processor"
 	"github.com/AzuresYang/arx7/app/spider/crawlerEngine"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
 	"github.com/AzuresYang/arx7/app/status"
 	"github.com/AzuresYang/arx7/config"
 	"github.com/AzuresYang/arx7/runtime"
+	"github.com/AzuresYang/arx7/util/timer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,6 +31,7 @@ type Spider struct {
 	ce            *crawlerEngine.CrawlerEngine
 	server        *arxlet.BaseTcpServer
 	crawlerConfig config.CrawlerConfig
+	heartTimer    *timer.Timer
 }
 
 func NewSpider() *Spider {
@@ -36,16 +40,25 @@ func NewSpider() *Spider {
 	}
 	cmds := spider.GetSupportCmds()
 	spider.server.RegisterHandler(cmds, spider)
+	spider.heartTimer = timer.New()
 	return spider
 }
 
 func (self *Spider) Init(listenport string) error {
 	self.name = listenport
+	// 注册一个默认的处理器
+	procer := processor.NewDefaultProcessor()
+	processor.Manager.Register(&procer)
+
 	err := self.server.Init(listenport)
 	if err != nil {
 		log.Errorf("Spider init server fail:%s", err.Error())
 		return err
 	}
+	// 每10s上报一次Spider运行心跳
+	self.heartTimer.RunTask(10*time.Second, func() {
+		monitorHandler.AddOne(status.MONI_SYS_HEART_APP)
+	})
 	return nil
 }
 
@@ -62,10 +75,11 @@ func (self *Spider) StopCrawler() {
 	self.ce = nil
 }
 
+// 吐槽一下自己，这个启动不太合理，导致app心跳监控只有在monitorHandler初始化之后才可以上报..
 func (self *Spider) StartCrawler(cfg *config.CrawlerConfig) (error, uint32) {
 	code_info := "Spider.StartCrawler"
 	runtime.G_CrawlerCfg.TaskConf = cfg.TaskConf
-	log.Infof("[%s_%s] start crawler", self.name, code_info)
+	log.Infof("[%s_%s] start crawler.----config:%+v", self.name, code_info, cfg)
 
 	// 之前有的话，先停止
 	if self.ce != nil {
@@ -130,8 +144,9 @@ func (self *Spider) handlerStartSpider(ctx *arxlet.ConnContext) error {
 		resp.Msg = "unserialize task conf fail"
 		return responseConn(ctx, resp)
 	}
+	master_ip := strings.Split(ctx.From.RemoteAddr().String(), ":")[0]
 	self.crawlerConfig.MasterAddr = fmt.Sprintf("%s:%s",
-		ctx.From.RemoteAddr().String(), self.crawlerConfig.TaskConf.MasterListenPort)
+		master_ip, self.crawlerConfig.TaskConf.MasterListenPort)
 	var ret_code uint32
 	err, ret_code = self.StartCrawler(&self.crawlerConfig)
 	if err != nil {

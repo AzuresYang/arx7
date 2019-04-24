@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-26 21:44:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 15:00:29
+ * @Last Modified time: 2019-04-22 23:46:28
  */
 package request
 
@@ -54,8 +54,9 @@ func TestReqManagerPushQueue(t *testing.T) {
 	fmt.Printf("ready init\n")
 	req_mgr.Init(cfg)
 	fmt.Printf("ready add req")
-	var src_req = NewArxRequest("http://www.baidu.com")
+	var src_req = NewArxRequest("http://www.xbiquge.la/paihangbang/")
 	req_mgr.AddNeedGrabRequest(src_req)
+	return 
 	new_req := req_mgr.GetRequest(2 * time.Second)
 	if new_req == nil {
 		t.Error("no req")

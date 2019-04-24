@@ -2,13 +2,14 @@
  * @Author: rayou
  * @Date: 2019-04-09 19:50:57
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-11 22:13:41
+ * @Last Modified time: 2019-04-24 22:34:02
  */
 
 package arxmonitor
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type MonitorMsgType int
@@ -73,7 +74,7 @@ func NewMonitorMsg(svcid uint32, metric uint32, msg_type MonitorMsgType) *Monito
 		Metric:  metric,
 		Classfy: 0,
 		Value:   1,
-		Time:    12345678,
+		Time:    time.Now().Unix(),
 		MsgType: msg_type,
 	}
 	return msg

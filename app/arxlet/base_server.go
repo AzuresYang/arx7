@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-14 17:25:13
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 16:20:41
+ * @Last Modified time: 2019-04-22 22:34:23
  */
 
 package arxlet
@@ -53,7 +53,7 @@ func (self *BaseTcpServer) RegisterHandler(cmds []uint32, handler ConnectHandler
 
 // 开始监听端口
 func (self *BaseTcpServer) Init(listenport string) error {
-	address := "127.0.0.1:" + listenport
+	address := ":" + listenport
 	localAddress, _ := net.ResolveTCPAddr("tcp4", address) //定义一个本机IP和端口。
 	var err error
 	self.tcpListener, err = net.ListenTCP("tcp", localAddress) //在刚定义好的地址上进监听请求。

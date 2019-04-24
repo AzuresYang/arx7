@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-15 17:22:22
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 21:06:49
+ * @Last Modified time: 2019-04-22 23:33:11
  */
 
 package arxscheduler
@@ -116,11 +116,7 @@ func (self *ArxScheduler) doStartSpider(nodeAddrs []string, cfg_data []byte) map
 				return
 			}
 			log.Infof("[%s] node[%s], start spider.ret:%d, msg:%s", code_info, addr, resp.Status, resp.Msg)
-			start_ret_msg := ""
-			if resp.Status != 0 {
-				start_ret_msg = resp.Msg
-			}
-			start_result[addr] = start_ret_msg
+			start_result[addr] = resp.Msg
 		}(addr)
 	}
 	wg.Wait()

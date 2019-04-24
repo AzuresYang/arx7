@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-05 22:05:31
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-21 15:59:10
+ * @Last Modified time: 2019-04-23 00:08:35
  */
 
 package output
@@ -82,6 +82,7 @@ func (self *OutputFastDfs) Init() error {
 }
 
 func postFile(filename string, target_url string, data []byte, params map[string]string) (*http.Response, error) {
+	code_info := "OutputFastDfs.postFile"
 	body_buf := bytes.NewBufferString("")
 	body_writer := multipart.NewWriter(body_buf)
 	for k, v := range params {
@@ -90,7 +91,7 @@ func postFile(filename string, target_url string, data []byte, params map[string
 	// use the body_writer to write the Part headers to the buffer
 	_, err := body_writer.CreateFormFile("file", filename)
 	if err != nil {
-		fmt.Println("error writing to buffer")
+		log.Errorf("[%s]error writing to buffer", code_info)
 		return nil, err
 	}
 
@@ -106,22 +107,23 @@ func postFile(filename string, target_url string, data []byte, params map[string
 	request_reader := io.MultiReader(body_buf, fh, close_buf)
 	req, err := http.NewRequest("POST", target_url, request_reader)
 	if err != nil {
+		log.Errorf("[%s]new request fail:%s", code_info, err.Error())
 		return nil, err
 	}
 
 	// Set headers for multipart, and Content Length
 	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
 	req.ContentLength = int64(len(data)) + int64(body_buf.Len()) + int64(close_buf.Len())
-	// log.Debugf("req:%+v", req)
+	log.Tracef("req:%+v", req)
 	return http.DefaultClient.Do(req)
 
 }
 func (self *OutputFastDfs) uploadData(data *CellFastDfs) {
 	code_info := "OuputFastDfs.uploadData"
-	url := self.DfsAddr
+	url := self.DfsAddr + "/upload"
 	param := make(map[string]string)
 	param["output"] = "json"
-	param["scene"] = ""
+	param["scene"] = "default"
 	param["path"] = data.Dir
 	log.Debugf("ready upload file:%s/%s", data.Dir, data.FileName)
 	resp, err := postFile(data.FileName, url, data.Data, param)

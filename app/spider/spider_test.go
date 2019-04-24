@@ -24,7 +24,7 @@ func buildCfg() *config.CrawlerConfig {
 		TaskId:          0,
 		CrawlerTreadNum: 2,
 		RedisAddr:       "193.112.68.221:6379",
-		RedisPassword:   "Redis@2019416",
+		RedisPassword:   "	",
 		FastDfsAddr:     "http://172.17.87.202:8080/upload",
 	}
 	return cfg

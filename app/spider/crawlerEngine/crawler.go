@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-03-25 22:21:15
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-15 15:59:26
+ * @Last Modified time: 2019-04-24 21:53:53
  */
 package crawlerEngine
 
@@ -12,10 +12,12 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
 	"github.com/AzuresYang/arx7/app/pipeline"
 	"github.com/AzuresYang/arx7/app/processor"
 	"github.com/AzuresYang/arx7/app/spider/downloader"
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
+	"github.com/AzuresYang/arx7/app/status"
 	"github.com/AzuresYang/arx7/config"
 	"github.com/AzuresYang/arx7/runtime"
 	"github.com/AzuresYang/arx7/util/record"
@@ -131,31 +133,28 @@ func (self *crawler) run() {
 func (self *crawler) processRequest(req *request.ArxRequest) {
 	code_info := reflect.TypeOf(self).String()
 	log.Debugf("[%s][%d] crawler get request:%s", code_info, self.id, req.Url)
+	// 获取处理器
 	procer := processor.Manager.GetProcessor(req.ProcerName)
-	is_download_succ := false
-	// 统计下载情况
-
-	defer func() {
-		if is_download_succ {
-			record.CountAddOne(record.COUNT_DOWNLOAD_SUCC)
-		} else {
-			record.CountAddOne(record.COUNT_DOWNLOAD_FAIL)
-		}
-	}()
-
 	if procer == nil {
 		log.Error(fmt.Sprintf("req could found procer[%s]", req.ProcerName))
 		processor.Manager.PrintAllProcessor("no found procer")
 		record.DownloadSuccReq(req, "req could found procer:"+req.ProcerName)
 		return
 	}
+
+	// 下载数据
 	ctx := self.downloader.Download(procer, req)
+
 	// 处理下载数据
 	if ctx == nil {
 		log.Error(fmt.Sprintf("download fail.ctx is nil.req:%#v", req))
 		record.DownloadFailReq(req, "download fail. ctx is nil")
+		record.CountAddOne(record.COUNT_DOWNLOAD_FAIL)
+		monitorHandler.AddOneWithClassfy(status.MONI_SYS_DOWNLOAD, 1)
 		return
 	}
+	record.CountAddOne(record.COUNT_DOWNLOAD_SUCC)
+	monitorHandler.AddOneWithClassfy(status.MONI_SYS_DOWNLOAD, 0)
 	log.Info("download succ.URL:" + req.Url)
 	cdata := procer.Process(ctx)
 	if cdata != nil {

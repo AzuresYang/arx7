@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
+	"github.com/AzuresYang/arx7/app/status"
 	"github.com/AzuresYang/arx7/config"
 	"github.com/AzuresYang/arx7/runtime"
 	"github.com/AzuresYang/arx7/util/stringUtil"
@@ -176,6 +178,8 @@ func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {
 		return nil
 	}
 	log.Debugf("[%s] get request from redis url:%s", code_info, req.Url)
+
+	monitorHandler.AddOne(status.MONI_SYS_REQUEST_GET)
 	return req
 }
 
@@ -230,6 +234,7 @@ func (self *RequestManager) AddNeedGrabRequest(req *ArxRequest) error {
 		return errors.New(err_msg)
 	}
 	log.Debugf("[%s]Add new url succ:%s", code_info, req.Url)
+	monitorHandler.AddOne(status.MONI_SYS_REQUEST_GET)
 	return nil
 }
 

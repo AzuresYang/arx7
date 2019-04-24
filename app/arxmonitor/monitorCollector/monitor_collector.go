@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-11 19:00:44
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-11 23:44:35
+ * @Last Modified time: 2019-04-24 22:13:30
  */
 
 package monitorCollector
@@ -28,7 +28,7 @@ type msgsaver struct {
 	Db     *sql.DB
 }
 
-type monitorCollector struct {
+type MonitorCollector struct {
 	db      *sql.DB
 	ifStop  bool
 	msgpkgs chan *arxmonitor.MonitorMsgPkg
@@ -36,20 +36,20 @@ type monitorCollector struct {
 	dbCfg   *db.MysqlConfig
 }
 
-func NewMonitorCollector(maxPkgs int) *monitorCollector {
-	c := &monitorCollector{
+func New(maxPkgs int) *MonitorCollector {
+	c := &MonitorCollector{
 		ifStop:  true,
 		msgpkgs: make(chan *arxmonitor.MonitorMsgPkg, maxPkgs),
 	}
 	return c
 }
-func (self *monitorCollector) Start(db_cfg *db.MysqlConfig) error {
+func (self *MonitorCollector) Start(db_cfg *db.MysqlConfig) error {
 	path := strings.Join([]string{db_cfg.UserName, ":", db_cfg.Password, "@tcp(", db_cfg.Ip, ":",
 		string(db_cfg.Port), ")/", db_cfg.DbName, "?charset=", db_cfg.Charset}, "")
 	var err error
 	self.db, err = sql.Open("mysql", path)
 	if err != nil {
-		log.Errorf("[MonitorServer.Start] Open mysql error:%s", err.Error())
+		log.Errorf("[MonitorCollector.Start] Open mysql error:%s", err.Error())
 		return err
 	}
 	// 设置链接最大空闲时间
@@ -64,22 +64,25 @@ func (self *monitorCollector) Start(db_cfg *db.MysqlConfig) error {
 		}
 		self.savers = append(self.savers, saver)
 	}
+	log.Info("[MonitorCollector.Start] start...")
+	self.ifStop = false
 	go self.Run()
 	return nil
 }
 
-func (self *monitorCollector) Stop() {
+func (self *MonitorCollector) Stop() {
 	self.ifStop = true
+	log.Info("[MonitorCollector.Stop] stop...")
 	for i, _ := range self.savers {
 		self.savers[i].Stop()
 	}
 }
 
-func (self *monitorCollector) IfStop() bool {
+func (self *MonitorCollector) IfStop() bool {
 	return self.ifStop
 }
 
-func (self *monitorCollector) Run() {
+func (self *MonitorCollector) Run() {
 	// 启动每一个数据库交互线程
 	self.ifStop = false
 	for i, _ := range self.savers {
@@ -87,9 +90,12 @@ func (self *monitorCollector) Run() {
 	}
 }
 
-func (self *monitorCollector) AddMonitorPkg(pkg *arxmonitor.MonitorMsgPkg) {
+func (self *MonitorCollector) AddMonitorPkg(pkg *arxmonitor.MonitorMsgPkg) {
 	code_info := "MonitorCollector.AddMonitorPkg"
-	log.Tracef("[%s]recv monitor pkg:%+v", pkg)
+	log.Tracef("[%s]recv monitor pkg:%+v", code_info, pkg)
+	if !self.ifStop {
+		return
+	}
 	self.msgpkgs <- pkg
 }
 
