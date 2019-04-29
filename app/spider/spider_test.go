@@ -24,8 +24,8 @@ func buildCfg() *config.CrawlerConfig {
 		TaskId:          0,
 		CrawlerTreadNum: 2,
 		RedisAddr:       "193.112.68.221:6379",
-		RedisPassword:   "	",
-		FastDfsAddr:     "http://172.17.87.202:8080/upload",
+		RedisPassword: "Redis@2019416",
+		FastDfsAddr: "http://172.17.87.202:8080/upload",
 	}
 	return cfg
 }
@@ -34,7 +34,8 @@ var Cfg *config.CrawlerConfig = buildCfg()
 
 func buildReq(procer processor.Processor) {
 	reqs := []string{
-		"http://www.xbiquge.la/paihangbang/",
+		// "http://www.xbiquge.la/paihangbang/",
+		"http://www.baidu.com/",
 	}
 	request.RequestMgr.Init(&Cfg.TaskConf)
 	for _, s := range reqs {
@@ -47,7 +48,6 @@ func buildReq(procer processor.Processor) {
 		request.RequestMgr.AddNeedGrabRequest(req)
 	}
 }
-
 
 func TestCrawler(t *testing.T) {
 	log.SetLevel(log.TraceLevel)

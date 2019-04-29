@@ -17,8 +17,8 @@ func TestDfs(t *testing.T) {
 	dfsPipe := &OutputFastDfs{}
 
 	data := NewCollectFastDfsData()
-	data.Add("test", "test.txt", []byte("test gg over"))
-	dfsPipe.Reset("http://172.17.87.202:8080/upload", "test")
+	data.Add("test2", "test.txt", []byte("test info"))
+	dfsPipe.Reset("http://172.17.87.202:8080", "test")
 	dfsPipe.CollectData(data.ToCollectData())
 	// fmt.Printf("%+v\n", data)
 	t.Log("done")

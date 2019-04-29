@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/AzuresYang/arx7/app/arxmaster"
+	"github.com/AzuresYang/arx7/app/message"
 	"github.com/AzuresYang/arx7/app/spider"
 	"github.com/AzuresYang/arx7/arxdeployment"
 	"github.com/AzuresYang/arx7/config"
@@ -62,21 +63,47 @@ func TestStartSpider(t *testing.T) {
 	// SpiderClient.Init("9888")
 	go MasterSvr.Run()
 	go SpiderClient.Run()
-	go SpiderClient2.Run()
+	// go SpiderClient2.Run()
 	go time.Sleep(1 * time.Second)
 	masterCfg := buildMasterCfg()
 	if masterCfg == nil {
 		return
 	}
-	MasterSvr.StartMonitorCollector(&masterCfg.MysqlConf)
+	// MasterSvr.StartMonitorCollector(&masterCfg.MysqlConf)
 
 	start_info := buildSpiderCfg()
-	fmt.Printf("get config:%+v\n", start_info)
+	// fmt.Printf("get config:%+v\n", start_info)
 	if start_info == nil {
 		return
 	}
 	nodes := []string{"127.0.0.1:9888", "127.0.0.1:9889"}
 	arxdeployment.InitRedis(start_info)
+	arxdeployment.SendStartToMaster(start_info, nodes)
+	time.Sleep(20 * time.Second)
+	t.Log("done")
+
+}
+
+func TestArxlet(t *testing.T) {
+	Init()
+	go MasterSvr.Run()
+	go SpiderClient.Run()
+	go time.Sleep(1 * time.Second)
+	masterCfg := buildMasterCfg()
+	if masterCfg == nil {
+		return
+	}
+	// MasterSvr.StartMonitorCollector(&masterCfg.MysqlConf)
+
+	start_info := buildSpiderCfg()
+	// fmt.Printf("get config:%+v\n", start_info)
+	if start_info == nil {
+		return
+	}
+	nodes := []string{"127.0.0.1:9888"}
+	// arxdeployment.InitRedis(start_info)
+	arxdeployment.SendMessageToSpider(nodes, message.MSG_REG_ECHO, []byte(""), "echo")
+	arxdeployment.SendMessageToSpider(nodes, message.MSG_REQ_STOP_SPIDER, []byte(""), "stop spider")
 	arxdeployment.SendStartToMaster(start_info, nodes)
 	time.Sleep(20 * time.Second)
 	t.Log("done")

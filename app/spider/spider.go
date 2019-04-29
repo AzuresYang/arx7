@@ -70,7 +70,9 @@ func (self *Spider) Stop() {
 	self.ce.Stop()
 }
 func (self *Spider) StopCrawler() {
-	self.ce.Stop()
+	if self.ce != nil{
+		self.ce.Stop()
+	}
 	// 为空大法好
 	self.ce = nil
 }

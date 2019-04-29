@@ -83,6 +83,7 @@ func (self *CrawlerEngine) Stop() {
 	if self.crawlerPool != nil {
 		self.crawlerPool.Stop()
 	}
+	log.Info("CrawlerEngine Stop")
 }
 
 func (self *CrawlerEngine) IfStop() bool {

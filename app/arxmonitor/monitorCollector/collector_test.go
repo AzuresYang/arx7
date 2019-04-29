@@ -10,7 +10,7 @@ import (
 	// "time"
 
 	"github.com/AzuresYang/arx7/app/arxmonitor"
-	"github.com/AzuresYang/arx7/db"
+	"github.com/AzuresYang/arx7/config"
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
@@ -93,9 +93,9 @@ func TestCollector(t *testing.T) {
 	if DB == nil {
 		t.Error("DB is nil")
 	}
-	log.SetLevel(log.DebugLevel)
-	server := NewMonitorCollector(5)
-	cfg := db.NewMysqlConfig()
+	log.SetLevel(log.TraceLevel)
+	server := New(5)
+	cfg := config.NewMysqlConfig()
 	err := server.Start(cfg)
 	if err != nil {
 		t.Error(err.Error())

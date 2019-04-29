@@ -8,6 +8,8 @@
 package downloader
 
 import (
+	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/AzuresYang/arx7/app/spider/downloader/request"
@@ -18,6 +20,10 @@ func TestSimpleDownloader(t *testing.T) {
 
 	simple_downloader := SimpleDownloader{}
 
-	simple_downloader.Download(nil, &src_req)
+	ctx := simple_downloader.Download(nil, src_req)
+	response := ctx.Response
+	body, _ := ioutil.ReadAll(response.Body)
+	bodystr := string(body)
+	fmt.Println(bodystr)
 	t.Log("down")
 }

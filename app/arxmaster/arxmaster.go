@@ -50,8 +50,8 @@ func (self *ArxMaster) Init(listenport string) error {
 }
 
 // 开始收集监控
-func (self *ArxMaster) StartMonitorCollector(db_cfg *config.MysqlConfig) {
-	self.mc.Start(db_cfg)
+func (self *ArxMaster) StartMonitorCollector(db_cfg *config.MysqlConfig) error {
+	return self.mc.Start(db_cfg)
 }
 
 func (self *ArxMaster) Run() {

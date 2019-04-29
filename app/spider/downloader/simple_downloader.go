@@ -72,7 +72,7 @@ func (self *SimpleDownloader) Download(procer processor.Processor, req *arxreque
 				response.Body = readCloser
 			}
 		}
-		log.Error("ctx is :%#v", ctx)
+		// log.Infof("ctx is :%#v", ctx)
 		return ctx
 	}
 	return ctx

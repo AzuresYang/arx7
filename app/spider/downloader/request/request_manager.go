@@ -10,7 +10,6 @@ import (
 	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
 	"github.com/AzuresYang/arx7/app/status"
 	"github.com/AzuresYang/arx7/config"
-	"github.com/AzuresYang/arx7/runtime"
 	"github.com/AzuresYang/arx7/util/stringUtil"
 	"github.com/garyburd/redigo/redis"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +27,7 @@ type RequestManager struct {
 	wait_push_req_queue chan *ArxRequest //等待推送到主服务的req无锁队列
 	redisPool           *redis.Pool
 	isDistribute        bool // 是否是分布式，也就Redis
+	taskId              uint32
 }
 
 var RequestMgr = &RequestManager{
@@ -41,6 +41,7 @@ func NewRequestManager() *RequestManager {
 }
 func (self *RequestManager) Init(cfg *config.CrawlerTask) error {
 	code_info := "RequestManager.Init"
+	self.taskId = cfg.TaskId
 	self.wait_push_req_queue = make(chan *ArxRequest, default_max_queue_len)
 	// 单机模式不需要链接redis
 	if !self.isDistribute {
@@ -127,7 +128,6 @@ func (self *RequestManager) getRequestWhenOneInstance(timeout time.Duration) (re
 	}
 }
 func (self *RequestManager) getRedisUrlQueueName(p ArxReqPriority) string {
-	var task_id uint32 = runtime.G_CrawlerCfg.TaskConf.TaskId
 	priority := "MIDDLE"
 	switch p {
 	case ARXREQ_PRIORITY_HIGH:
@@ -138,12 +138,11 @@ func (self *RequestManager) getRedisUrlQueueName(p ArxReqPriority) string {
 		priority = "MIDDLE"
 	}
 	// taskID::urlqueue::priority
-	return fmt.Sprintf("%d::%s::%s", task_id, default_redis_urlqueue_name, priority)
+	return fmt.Sprintf("%d::%s::%s", self.taskId, default_redis_urlqueue_name, priority)
 }
 
 func (self *RequestManager) getRedisUniqueSetName() string {
-	var task_id uint32 = runtime.G_CrawlerCfg.TaskConf.TaskId
-	return fmt.Sprintf("%d::%s", task_id, default_redis_url_unique_set)
+	return fmt.Sprintf("%d::%s", self.taskId, default_redis_url_unique_set)
 }
 
 func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {

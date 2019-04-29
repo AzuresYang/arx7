@@ -56,7 +56,7 @@ func TestReqManagerPushQueue(t *testing.T) {
 	fmt.Printf("ready add req")
 	var src_req = NewArxRequest("http://www.xbiquge.la/paihangbang/")
 	req_mgr.AddNeedGrabRequest(src_req)
-	return 
+	return
 	new_req := req_mgr.GetRequest(2 * time.Second)
 	if new_req == nil {
 		t.Error("no req")
@@ -67,6 +67,31 @@ func TestReqManagerPushQueue(t *testing.T) {
 	t.Log("gogogo")
 }
 
+func TestAddGet(t *testing.T) {
+	log.SetLevel(log.TraceLevel)
+	req_mgr := RequestMgr
+	if req_mgr == nil {
+		t.Error("req Mgr is nil")
+		return
+	}
+	cfg := buildCfg()
+	req_mgr.Init(cfg)
+	var src_req = NewArxRequest("middle")
+	req_mgr.AddNeedGrabRequest(src_req)
+	src_req.Url = "hige"
+	src_req.Priority = ARXREQ_PRIORITY_HIGH
+	req_mgr.AddNeedGrabRequest(src_req)
+	src_req.Url = "low"
+	src_req.Priority = ARXREQ_PRIORITY_LOW
+	req_mgr.AddNeedGrabRequest(src_req)
+	new_req := req_mgr.GetRequest(2 * time.Second)
+	if new_req == nil {
+		t.Error("no req")
+		return
+	}
+	fmt.Printf("ret is:%+v", new_req)
+
+}
 func TestDelKey(t *testing.T) {
 	log.SetLevel(log.TraceLevel)
 	c := getConn()
