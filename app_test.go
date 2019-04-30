@@ -109,3 +109,26 @@ func TestArxlet(t *testing.T) {
 	t.Log("done")
 
 }
+
+func TestGenerateMoniData(t *testing.T) {
+	Init()
+	go MasterSvr.Run()
+	go SpiderClient.Run()
+	go time.Sleep(1 * time.Second)
+	masterCfg := buildMasterCfg()
+	if masterCfg == nil {
+		return
+	}
+	MasterSvr.StartMonitorCollector(&masterCfg.MysqlConf)
+	timeLen := 60 * 60 * 2 // 2个小时
+	interBig := 60 * 3
+	interSm := 10
+	toBeCharge := "2019-4-30 00:00:00"                              //待转化为时间戳的字符串 注意 这里的小时和分钟还要秒必须写 因为是跟着模板走的 修改模板的话也可以不写
+	timeLayout := "2006-01-02 15:04:05"                             //转化所需模板
+	loc, _ := time.LoadLocation("Local")                            //重要：获取时区
+	theTime, _ := time.ParseInLocation(timeLayout, toBeCharge, loc) //使用模板在对应时区转化为time.time类型
+	sr := theTime.Unix()
+	time.Sleep(20 * time.Second)
+	t.Log("done")
+
+}

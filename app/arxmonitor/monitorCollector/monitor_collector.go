@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-11 19:00:44
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 23:36:45
+ * @Last Modified time: 2019-05-01 00:28:03
  */
 
 package monitorCollector
@@ -16,10 +16,6 @@ import (
 	"github.com/AzuresYang/arx7/config"
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	DEFAULT_MONITOR_TIME_INTERVAL = 60 // 监控时间精度，单位 s
 )
 
 // 用于保存数据到数据库中，支持开启多个
@@ -142,6 +138,8 @@ func (self *msgsaver) doSaveMonitorMsg(c chan *arxmonitor.MonitorMsgPkg) {
 				log.Errorf("[%s] sql prepare fail:insert:%s|query:%s|update:%s", code_info, ierr.Error(), qerr.Error(), uerr.Error())
 				continue
 			}
+			// 添加之前先对包做一些处理， 不处理则支持任意精度
+			pkg = refactorMonitorPkg(pkg)
 			err := self.addMonitorMsgToDb(pkg, query_stmt, insert_stmt, update_stmt)
 			if err != nil {
 				log.Errorf("[%s]add monitor msg fail:%s", code_info, err.Error())
@@ -211,7 +209,7 @@ func (self *msgsaver) addMonitorMsgToDb(pkg *arxmonitor.MonitorMsgPkg, qstmt *sq
 func refactorMonitorPkg(pkg *arxmonitor.MonitorMsgPkg) *arxmonitor.MonitorMsgPkg {
 	ret_pkg := pkg
 	for i, msg := range pkg.Msgs {
-		pkg.Msgs[i].Time = msg.Time - msg.Time%DEFAULT_MONITOR_TIME_INTERVAL
+		pkg.Msgs[i].Time = msg.Time - msg.Time%arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
 	}
 	ret_pkg = integrationMonitorMsgPkg(pkg)
 	return ret_pkg

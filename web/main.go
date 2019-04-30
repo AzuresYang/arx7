@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-18 10:57:50
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-28 13:44:11
+ * @Last Modified time: 2019-04-30 12:33:20
  */
 
 package main
@@ -12,6 +12,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/AzuresYang/arx7/config"
 	"github.com/AzuresYang/arx7/web/controller"
 )
 
@@ -54,6 +55,13 @@ func Vue(response http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
+	conf := &config.MasterConfig{}
+	err := config.ReadConfigFromFileJson("F:\\master.json", conf)
+	if err != nil {
+		fmt.Printf("read config fail:%s\n", err.Error())
+		return
+	}
+	controller.DbService.Init(&conf.MysqlConf)
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./static/css"))))
 	// http.Handle("/css/", http.FileServer(http.Dir("template")))
 	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("./static/js"))))
@@ -61,7 +69,7 @@ func main() {
 	// http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./static/img"))))
 	http.HandleFunc("/index/", Index)
 	http.HandleFunc("/vue", Vue)
-	http.HandleFunc("/monitor/", controller.MonitorInfoHandler)
+	http.HandleFunc("/get/monitor", controller.MonitorInfoHandler)
 	// http.HandleFunc("/login/",loginHandler)
 	// http.HandleFunc("/ajax/",ajaxHandler)
 	http.HandleFunc("/", Hello)

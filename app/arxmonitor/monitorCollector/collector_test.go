@@ -3,6 +3,7 @@ package monitorCollector
 import (
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -18,8 +19,8 @@ import (
 //数据库配置
 const (
 	userName = "root"
-	password = "mysql5722"
-	ip       = "127.0.0.1"
+	password = "Mysql@#9420"
+	ip       = "193.112.68.221"
 	port     = "3306"
 	dbName   = "monitor_info"
 )
@@ -88,6 +89,15 @@ func TestQueryUpdate(t *testing.T) {
 	t.Log("donw")
 }
 
+func TestQueryMonitor(t *testing.T) {
+	connectDb()
+	if DB == nil {
+		t.Error("DB is nil")
+	}
+	log.SetLevel(log.TraceLevel)
+	// sql := "select time, value from monitor_data where svcid=? and metric=? and time in(?,?)"
+}
+
 func TestCollector(t *testing.T) {
 	connectDb()
 	if DB == nil {
@@ -95,17 +105,60 @@ func TestCollector(t *testing.T) {
 	}
 	log.SetLevel(log.TraceLevel)
 	server := New(5)
-	cfg := config.NewMysqlConfig()
-	err := server.Start(cfg)
+	conf := &config.MasterConfig{}
+	err := config.ReadConfigFromFileJson("F:\\master.json", conf)
+	if err != nil {
+		fmt.Printf("read config fail:%s\n", err.Error())
+		return
+	}
+	err = server.Start(&conf.MysqlConf)
 	if err != nil {
 		t.Error(err.Error())
+		return
 	}
-	pkg := buildMsgPkg()
+	pkg := buildMoniMsgPkg()
 	server.AddMonitorPkg(pkg)
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 	server.Stop()
-	time.Sleep(3 * time.Second)
+	//time.Sleep(3 * time.Second)
 	t.Log("done")
+}
+
+func buildMoniMsgPkg() *arxmonitor.MonitorMsgPkg {
+	bitPause := []int64{30, 30}
+	// sleep_time := self.pause[0] + rand.Int63n(self.pause[1])
+	var timeLen int64 = 60 * 60 * 2 // 2个小时
+	var interSm int64 = 10
+	toBeCharge := "2019-04-30 00:00:00"                             //待转化为时间戳的字符串 注意 这里的小时和分钟还要秒必须写 因为是跟着模板走的 修改模板的话也可以不写
+	timeLayout := "2006-01-02 15:04:05"                             //转化所需模板
+	loc, _ := time.LoadLocation("Local")                            //重要：获取时区
+	theTime, _ := time.ParseInLocation(timeLayout, toBeCharge, loc) //使用模板在对应时区转化为time.time类型
+	start := theTime.Unix()
+	fmt.Println(start)
+	end := start + timeLen
+	pkg := arxmonitor.NewMonitorMsgPkg("127", 50)
+	msg := arxmonitor.NewMonitorMsg(5542, 3001, arxmonitor.MONITORMSG_ADD)
+	var lastValue int32 = 5
+	valuePause := []int32{20, 600}
+	for start <= end {
+		// fmt.Printf("start:%d, end:%d\n", start, end)
+		next_time := bitPause[0] + rand.Int63n(bitPause[1]) + start
+		next_pause_value := valuePause[0] + rand.Int31n(valuePause[1])
+		var cha int32 = next_pause_value - lastValue
+		var i int64 = start
+		for i < next_time {
+			// fmt.Printf("i:%d, next_time:%d\n", i, next_time)
+			msg.Time = i
+			rand_value := float32(cha) * rand.Float32()
+			cha -= int32(rand_value)
+			lastValue += int32(rand_value)
+			msg.Value = uint32(lastValue)
+			pkg.AddMsg(msg)
+			i += interSm
+		}
+		start = next_time
+	}
+	return pkg
 }
 
 func buildMsgPkg() *arxmonitor.MonitorMsgPkg {
@@ -139,7 +192,7 @@ func buildMsgPkg() *arxmonitor.MonitorMsgPkg {
 }
 func TestIntegrationMsgPkg(t *testing.T) {
 	log.SetLevel(log.TraceLevel)
-	pkg := buildMsgPkg()
+	pkg := buildMoniMsgPkg()
 	pkg = refactorMonitorPkg(pkg)
 	fmt.Printf("Ip:%s\n", pkg.Ip)
 	for i, msg := range pkg.Msgs {
@@ -192,4 +245,13 @@ func TestSaver(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	showDb()
 	t.Log("test saver succ")
+}
+
+func TestShowDb(t *testing.T) {
+	connectDb()
+	if DB == nil {
+		t.Error("DB is nil")
+	}
+	log.SetLevel(log.TraceLevel)
+	showDb()
 }
