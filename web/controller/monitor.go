@@ -2,15 +2,13 @@
  * @Author: rayou
  * @Date: 2019-04-27 16:01:21
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-01 00:34:28
+ * @Last Modified time: 2019-05-04 17:35:34
  */
 
 package controller
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,48 +16,13 @@ import (
 )
 
 const (
-	default_real_monitor_interval int64 = 10 * 60 // 10 分钟内的
+	default_real_monitor_interval int64 = 10 * 60          // 10 分钟内的
+	default_max_query_start2end   int64 = 60 * 60 * 24 * 2 // 最多查询2天的数据
 )
 
 type MonitorInfo struct {
 	XAxsis []string `json:"xAxsis"`
 	Series []uint32 `json:"series"`
-}
-
-func parseForm(request *http.Request, st interface{}) error {
-	request.ParseForm()
-	log.Infof("Form:%#v", request.Form)
-	var new_form = make(map[string]string)
-	for k, v := range request.Form {
-		if v[0] == "" {
-			return errors.New("表单参数不能为空")
-		}
-		new_form[k] = v[0]
-	}
-	log.Infof("Form parse:%#v", new_form)
-	jdata, err := json.Marshal(new_form)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(jdata, st)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func responseJson(response http.ResponseWriter, status uint32, msg string, data interface{}) error {
-	resp := ResponseData{
-		Status: status,
-		Msg:    msg,
-		Data:   data,
-	}
-	jdata, err := json.Marshal(resp)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(response, string(jdata))
-	return nil
 }
 
 func MonitorInfoHandler(response http.ResponseWriter, request *http.Request) {
@@ -103,7 +66,7 @@ func MonitorInfoHandler(response http.ResponseWriter, request *http.Request) {
 
 func checkQueryMonitorInfo(form *FormQueryMonitor) error {
 	// toBeCharge := "2019-04-30 00:00:00"                             //待转化为时间戳的字符串 注意 这里的小时和分钟还要秒必须写 因为是跟着模板走的 修改模板的话也可以不写
-	time_layout := "2006-01-02 15:04"                                               //转化所需模板
+	time_layout := "2006-01-02 15:04:05"                                            //转化所需模板
 	loc, _ := time.LoadLocation("Local")                                            //重要：获取时区
 	temp_start_time, serr := time.ParseInLocation(time_layout, form.StartTime, loc) //使用模板在对应时区转化为time.time类型
 	temp_end_time, eerr := time.ParseInLocation(time_layout, form.EndTime, loc)     //使用模板在对应时区转化为time.time类型
@@ -114,6 +77,9 @@ func checkQueryMonitorInfo(form *FormQueryMonitor) error {
 	end_time := temp_end_time.Unix()
 	if start_time >= end_time {
 		return errors.New("开始时间不能大于截止时间")
+	}
+	if (end_time - start_time) > default_max_query_start2end {
+		return errors.New("查询时间程度不能大于2天。")
 	}
 	return nil
 }

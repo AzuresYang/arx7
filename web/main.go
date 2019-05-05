@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-18 10:57:50
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-30 12:33:20
+ * @Last Modified time: 2019-05-04 18:43:36
  */
 
 package main
@@ -39,7 +39,7 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		Name    string
 		Country string
 	}
-	fmt.Println("get conn")
+	fmt.Println("get indx conn")
 	liumiaocn := person{Id: 1001, Name: "liumiaocn", Country: "China"}
 
 	tmpl, err := template.ParseFiles("./template/index.html")
@@ -47,11 +47,6 @@ func Index(response http.ResponseWriter, request *http.Request) {
 		fmt.Println("Error happened..")
 	}
 	tmpl.Execute(response, liumiaocn)
-}
-
-func Vue(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("get vue con")
-	http.ServeFile(response, request, "./template/index.html")
 }
 
 func main() {
@@ -68,11 +63,12 @@ func main() {
 	http.Handle("/fonts/", http.StripPrefix("/fonts/", http.FileServer(http.Dir("./static/fonts"))))
 	// http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./static/img"))))
 	http.HandleFunc("/index/", Index)
-	http.HandleFunc("/vue", Vue)
 	http.HandleFunc("/get/monitor", controller.MonitorInfoHandler)
-	// http.HandleFunc("/login/",loginHandler)
-	// http.HandleFunc("/ajax/",ajaxHandler)
+	http.HandleFunc("/get/pods", controller.ClusterHandlerGetPods)
+	http.HandleFunc("/cluster/scale", controller.ClusterHandlerScalePods)
+
 	http.HandleFunc("/", Hello)
+
 	http.ListenAndServe(":8888", nil)
 	// r := gin.Default()
 	// r.LoadHTMLGlob("template/*.html")              // 添加入口index.html

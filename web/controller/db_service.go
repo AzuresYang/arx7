@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-30 12:11:16
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-01 00:32:14
+ * @Last Modified time: 2019-05-01 12:15:21
  */
 package controller
 
@@ -36,6 +36,7 @@ func (self *dbService) Init(db_cfg *config.MysqlConfig) error {
 		log.Errorf("[DbService.Init] Open mysql error:%s", err.Error())
 		return err
 	}
+	fmt.Println("start mysql")
 	// log.Debugf("[DbService.Init]config :%+v", db_cfg)
 	// 设置链接最大空闲时间
 	self.db.SetConnMaxLifetime(100 * time.Second)
@@ -44,17 +45,7 @@ func (self *dbService) Init(db_cfg *config.MysqlConfig) error {
 	return nil
 }
 
-func (self *dbService) GetMonitorInfoByForm(query *FormQueryMonitor) ([]MonitorData, error) {
-	time_layout := "2006-01-02 15:04" //转化所需模板
-	loc, _ := time.LoadLocation("Local")
-	temp_start_time, _ := time.ParseInLocation(time_layout, query.StartTime, loc) //使用模板在对应时区转化为time.time类型
-	temp_end_time, _ := time.ParseInLocation(time_layout, query.EndTime, loc)     //使用模板在对应时区转化为time.time类型
-	start_time := temp_start_time.Unix()
-	end_time := temp_end_time.Unix()
-	return GetMonitorInfo(query, start_time, end_time)
-}
-
-func (self *dbService) GetMonitorInfo(query *FormQueryMonitor, start_time int64, end_time int 64) ([]MonitorData, error) {
+func (self *dbService) GetMonitorInfo(query *FormQueryMonitor, start_time int64, end_time int64) ([]MonitorData, error) {
 	code_info := "DbService.GetDbInfo"
 	datas := make([]MonitorData, 0)
 	var rows *sql.Rows
@@ -83,6 +74,16 @@ func (self *dbService) GetMonitorInfo(query *FormQueryMonitor, start_time int64,
 		}
 	}
 	return generateMonitorData(start_time, end_time, datas), nil
+}
+
+func (self *dbService) GetMonitorInfoByForm(query *FormQueryMonitor) ([]MonitorData, error) {
+	time_layout := "2006-01-02 15:04:05" //转化所需模板
+	loc, _ := time.LoadLocation("Local")
+	temp_start_time, _ := time.ParseInLocation(time_layout, query.StartTime, loc) //使用模板在对应时区转化为time.time类型
+	temp_end_time, _ := time.ParseInLocation(time_layout, query.EndTime, loc)     //使用模板在对应时区转化为time.time类型
+	start_time := temp_start_time.Unix()
+	end_time := temp_end_time.Unix()
+	return self.GetMonitorInfo(query, start_time, end_time)
 }
 
 // 需要按照精度对时间生成

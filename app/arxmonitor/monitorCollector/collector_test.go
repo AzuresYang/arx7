@@ -124,6 +124,29 @@ func TestCollector(t *testing.T) {
 	t.Log("done")
 }
 
+func TestRealTimeMonitor(t *testing.T) {
+	conf := &config.MasterConfig{}
+	err := config.ReadConfigFromFileJson("F:\\master.json", conf)
+	if err != nil {
+		fmt.Printf("read config fail:%s\n", err.Error())
+		return
+	}
+	server := New(5)
+	err = server.Start(&conf.MysqlConf)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	for i := 0; i < 1000; i++ {
+		pkg := arxmonitor.NewMonitorMsgPkg("127", 50)
+		msg := arxmonitor.NewMonitorMsg(5542, 3001, arxmonitor.MONITORMSG_ADD)
+		pkg.AddMsg(msg)
+		server.AddMonitorPkg(pkg)
+		time.Sleep(1 * time.Second)
+	}
+
+}
+
 func buildMoniMsgPkg() *arxmonitor.MonitorMsgPkg {
 	bitPause := []int64{30, 30}
 	// sleep_time := self.pause[0] + rand.Int63n(self.pause[1])

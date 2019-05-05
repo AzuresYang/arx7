@@ -8,11 +8,23 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="/css/bootstrap.min.css">
 	<link rel="stylesheet" href="/css/bootstrap-datetimepicker.min.css">
+	<link rel="stylesheet" href="/css/awesome-bootstrap-checkbox.css">
+	<link rel="stylesheet" href="/css/font-awesome.css">
+	<link rel="stylesheet" href="/css/fileinput.min.css">
+
 	<script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+
 	<script src="/js/bootstrap.min.js"></script>
 	<script src="/js/bootstrap-datetimepicker.min.js"></script>
 	<script src="/js/bootstrap-datetimepicker.zh-CN.js"></script>
 	<script src='/js/echarts.min.js'></script>
+	<script src='/js/fileinput.min.js'></script>
+	<script src='/js/zh.js'></script>
+
+	<!--表格组件-->
+	<script src="/js/bootstrap-table.js"></script>
+	<link href="/css/bootstrap-table.css" rel="stylesheet" />
+	<script src="/js/bootstrap-table-zh-CN.js"></script>
 	<title>Arx</title>
 	<script type="text/javascript">
 	</script>
@@ -22,7 +34,8 @@
 		#sidemenu {
 			width: 200px;
 			padding: 0;
-			position: absolute;
+			/* position: absolute; */
+			position: fixed;
 			top: 51px;
 			height: 100%;
 			background: #304156;
@@ -30,6 +43,7 @@
 
 		#page-main {
 			margin-left: 201px;
+			margin-top: 60px;
 			padding-left: 10px;
 			background-color: white;
 		}
@@ -56,7 +70,7 @@
 
 <body>
 	<!--顶部导航-->
-	<nav class="navbar navbar-default navbar-static-top">
+	<nav class="navbar navbar-default navbar-fixed-top">
 		<div clas="navbar-header">
 			<a href="#" class="navbar-brand">Arx</a>
 		</div>
@@ -70,9 +84,9 @@
 	<div class="navbar-default navbar-collapse" id="sidemenu">
 		<ul id="myTab" class="nav nav-pills nav-stacked" role="tablist">
 			<li class="active">
-				<a href="#cluster" data-toggle="tab">监控查看</a>
+				<a href="#monitor-info" data-toggle="tab">监控查看</a>
 			</li>
-			<li><a href="#monitor-info" data-toggle="tab">集群信息</a></li>
+			<li><a href="#cluster" data-toggle="tab">集群信息</a></li>
 			<li><a href="#files" data-toggle="tab">文件管理</a></li>
 		</ul>
 	</div>
@@ -85,25 +99,28 @@
 	</div>
 	<!--主标签页-->
 	<div id="page-main" class="tab-content">
-		<div class="tab-pane fade in active" id="cluster">
+		<div class="tab-pane fade" id="monitor-info">
 			<label>集群监控查看</label>
 			<form id="monitor_form" role="form" class="form-horizontal" style="padding-left: 10px;">
 				<div class="form-group ">
 					<label class="col-sm-1 control-label " for="svcid">服务ID</label>
 					<div class="col-sm-2">
-						<input type="text" name="svcid" placeholder="number" value="5542" id="svcid" class="form-control">
+						<input type="number" min="0" name="svcid" placeholder="number" value="5542" id="svcid"
+							class="form-control span2">
 					</div>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label" for="metric">监控ID</label>
 					<div class="col-sm-2">
-						<input type="text" name="metric" placeholder="number" value="5542" id="metric" class="form-control">
+						<input type="number" min="0" name="metric" placeholder="number" value="5542" id="metric"
+							class="form-control">
 					</div>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label" for="classfy">分类ID</label>
 					<div class="col-sm-2">
-						<input type="text" name="classfy" placeholder="0"value="0" id="classfy" class="form-control">
+						<input type="number" min="0" name="classfy" placeholder="0" value="0" id="classfy"
+							class="form-control">
 					</div>
 				</div>
 				<!--时间选择行-->
@@ -113,7 +130,7 @@
 						<div class='col-sm-3'>
 							<div class='input-group date datetimePicker' id='datetimepicker1'>
 								<span class="input-group-addon">开始时间</span>
-								<input name="start_time" type='text' class="form-control" />
+								<input name="start_time" id="start_time" type='text' class="form-control" />
 								<span class="input-group-addon">
 									<span class="glyphicon glyphicon-calendar"></span>
 								</span>
@@ -127,57 +144,146 @@
 						<div class='col-sm-3'>
 							<div class='input-group date datetimePicker' id='datetimepicker2'>
 								<span class="input-group-addon">截止时间</span>
-								<input name="end_time" type='text' class="form-control" />
+								<input name="end_time" type='text' class="form-control" id="end_time" />
 								<span class="input-group-addon">
 									<span class="glyphicon glyphicon-calendar"></span>
 								</span>
 							</div>
 						</div>
 					</div>
-					<div class class="form-group ">
-						<div class='col-sm-1'>
-							<div class='input-group'>
-								<span class="input-group-addon">是否实时监控数据</span>
-								<input name="ifRealTime" type='checkbox' value="" />
-							</div>
-						</div>
-					</div>
+				</div>
+			</form>
+
+			<div class="row">
+
+				<div class="col-sm-1">
+					<button type="submit" id="bt_querymonitor" class="btn btn-default"
+						style="margin-left: 70px; margin-top:10px;">查询</button>
+				</div>
+				<div class="checkbox checkbox-info checkbox-circle col-lg-offset-1" style="top:7px;left:5px;">
+					<input type="checkbox" id="ifRealTime">
+					<label for="ifRealTime">是否实时监控</label>
 				</div>
 
-				
-			</form>
-			<button type="submit" id="bt_querymonitor" class="btn btn-default" style="margin-left: 70px; margin-top:10px;">查询</button>
-			<div id="chart-monitor" style="width: 1200px; height: 500px;"></div>
-		</div>
-
-		<div class="tab-pane fade" id="monitor-info">
-			<p>监控信息</p>
-
-			<div class="tab-pane fade" id="files">
-				<p>jMeter 是一款开源的测试软件。它是 100% 纯 Java 应用程序，用于负载和性能测试。</p>
+				<!-- <div class="col-sm-1">
+					<label for="realTimeInterval">实时监控时长间隔(分钟)</label>
+					<input name="realTimeInterval" id="realTimeInterval" type='number' min="1" class="form-control" />
+				</div> -->
 			</div>
+
+			<div id="chart-monitor" style="width: 1200px; height: 500px;"></div>
+
+		</div>
+		<div class="tab-pane fade in active" id="cluster">
+			<p>集群信息</p>
+
+			<form id="form_cluster_status" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="sspidername">获取爬虫任务信息</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" placeholder="spider name" value="spider01" id="sspidername"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<button type="submit" id="bt_cluster_status" class="btn btn-default">查询</button>
+					</div>
+				</div>
+			</form>
+			<form id="form_cluster_deployment" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="dspidername">部署爬虫程序</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" placeholder="爬虫任务名" id="dspidername" value="spider01"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<input type="text" name="image" placeholder="镜像地址" id="image" class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<button type="submit" id="bt_cluster_deployment" class="btn btn-default">发布</button>
+					</div>
+				</div>
+			</form>
+			<form id="form_cluster_start" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="stspidername">启动爬虫程序</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" value="spider01" placeholder="爬虫任务名" id="stspidername"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<input type="file" name="config" placeholder="配置文件" id="config" class="">
+					</div>
+					<div class="col-sm-2">
+						<button type="submit" id="bt_cluster_start" class="btn btn-default">启动</button>
+					</div>
+				</div>
+			</form>
+			<form id="form_cluster_scale" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="scspidername">扩缩容爬虫</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" value="spider01" placeholder="爬虫任务名" id="scspidername"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<input type="number" name="nodes" value="2" placeholder="目标数量" id="nodes" min="0" max="10"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<button type="submit" id="bt_cluster_scale" class="btn btn-default">扩缩容</button>
+					</div>
+				</div>
+			</form>
+			<form id="form_cluster_delete" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="despidername">删除爬虫程序</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" value="spider01" placeholder="爬虫任务名" id="despidername"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<button type="submit" id="bt_cluster_delete" class="btn btn-default">删除</button>
+					</div>
+				</div>
+			</form>
+			<div class="row">
+				<div class="col-sm-2">
+					<button type="submit" id="bt_queryPods" class="btn btn-default">查询集群信息</button>
+				</div>
+			</div>
+			<div id="cluster_toolbar" class="btn-group">
+			</div>
+			<table id="tb_spider"></table>
+			<div id="cluster_operate_toolbar" class="btn-group">
+				<p> 操作记录：</p>
+			</div>
+			<table id="tb_operate"></table>
 		</div>
 
+		<div class="tab-pane fade" id="files">
+			<p>jMeter 是一款开源的测试软件。它是 100% 纯 Java 应用程序，用于负载和性能测试。</p>
+		</div>
 	</div>
 	<script src="/js/index.js"></script>
 	<script type="text/javascript">
 
 
 		$('.datetimePicker').datetimepicker({
-			format: 'yyyy-mm-dd hh:ii',
+			format: 'yyyy-mm-dd hh:ii:ss',
 			useCurrent: true,	// 是否选中现在，是
 			locale: 'zh-cn',	// 文字，中文
-			startView:1,   // 开始视图，选择小时
-			todayBtn:true, // 显示今天按钮
-			minuteStep:30, // 最小间隔， 单位，分钟
-			initialDate:new Date(),
+			startView: 1,   // 开始视图，选择小时
+			todayBtn: true, // 显示今天按钮
+			minuteStep: 30, // 最小间隔， 单位，分钟
+			initialDate: new Date(),
 		});
 		var yesterday = new Date()
 		yesterday = yesterday.DateLess('h', 12)
 		$("#datetimepicker1").datetimepicker("setDate", yesterday);
 
 		$("#datetimepicker2").datetimepicker("setDate", new Date());
-    </script>
+	</script>
 </body>
 
 </html>
