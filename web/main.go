@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-18 10:57:50
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-04 18:43:36
+ * @Last Modified time: 2019-05-05 14:51:30
  */
 
 package main
@@ -65,15 +65,11 @@ func main() {
 	http.HandleFunc("/index/", Index)
 	http.HandleFunc("/get/monitor", controller.MonitorInfoHandler)
 	http.HandleFunc("/get/pods", controller.ClusterHandlerGetPods)
+	http.HandleFunc("/cluster/spiderstatus", controller.ClusterHandlerGetSpiderStatus)
+	http.HandleFunc("/cluster/deployment", controller.ClusterHandlerDeployment)
+	http.HandleFunc("/cluster/start", controller.ClusterHandlerStartSpider)
 	http.HandleFunc("/cluster/scale", controller.ClusterHandlerScalePods)
-
+	http.HandleFunc("/cluster/delete", controller.ClusterHandlerDeleteSpider)
 	http.HandleFunc("/", Hello)
-
 	http.ListenAndServe(":8888", nil)
-	// r := gin.Default()
-	// r.LoadHTMLGlob("template/*.html")              // 添加入口index.html
-	// r.LoadHTMLFiles("static/*/*")              // 添加资源路径
-	// r.Static("/static", "./dist/static")       // 添加资源路径
-	// r.StaticFile("/index/", "dist/index.html") //前端接口
-	// r.Run(":8888")
 }

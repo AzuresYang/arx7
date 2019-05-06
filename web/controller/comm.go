@@ -86,6 +86,15 @@ func parseForm(request *http.Request, st interface{}) error {
 	return nil
 }
 
+func parseFormAsMap(request *http.Request) map[string]string {
+	request.ParseForm()
+	var new_form = make(map[string]string)
+	for k, v := range request.Form {
+		new_form[k] = v[0]
+	}
+	return new_form
+}
+
 func responseJson(response http.ResponseWriter, status uint32, msg string, data interface{}) error {
 	resp := ResponseData{
 		Status: status,

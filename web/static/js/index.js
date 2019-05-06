@@ -69,24 +69,23 @@ Date.prototype.DateLess = function (strInterval, Number) {
   }
 }
 
-Date.prototype.format = function(format)
-{
- var o = {
- "M+" : this.getMonth()+1, //month
- "d+" : this.getDate(),    //day
- "h+" : this.getHours(),   //hour
- "m+" : this.getMinutes(), //minute
- "s+" : this.getSeconds(), //second
- "q+" : Math.floor((this.getMonth()+3)/3),  //quarter
- "S" : this.getMilliseconds() //millisecond
- }
- if(/(y+)/.test(format)) format=format.replace(RegExp.$1,
- (this.getFullYear()+"").substr(4 - RegExp.$1.length));
- for(var k in o)if(new RegExp("("+ k +")").test(format))
- format = format.replace(RegExp.$1,
- RegExp.$1.length==1 ? o[k] :
- ("00"+ o[k]).substr((""+ o[k]).length));
- return format;
+Date.prototype.format = function (format) {
+  var o = {
+    "M+": this.getMonth() + 1, //month
+    "d+": this.getDate(),    //day
+    "h+": this.getHours(),   //hour
+    "m+": this.getMinutes(), //minute
+    "s+": this.getSeconds(), //second
+    "q+": Math.floor((this.getMonth() + 3) / 3),  //quarter
+    "S": this.getMilliseconds() //millisecond
+  }
+  if (/(y+)/.test(format)) format = format.replace(RegExp.$1,
+    (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+  for (var k in o) if (new RegExp("(" + k + ")").test(format))
+    format = format.replace(RegExp.$1,
+      RegExp.$1.length == 1 ? o[k] :
+        ("00" + o[k]).substr(("" + o[k]).length));
+  return format;
 }
 
 $(document).ready(function () {
@@ -173,7 +172,7 @@ $(function () {
   //1.初始化Table
   var oTable = new SpiderTableInit();
   oTable.Init();
- 
+
   var operateTable = new OperateTableInit();
   operateTable.Init();
 
@@ -199,7 +198,7 @@ var SpiderTableInit = function () {
       sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
       pageNumber: 1,                       //初始化加载第一页，默认第一页
       pageSize: 5,                       //每页的记录行数（*）
-      pageList: [5,10, 25, 50, 100],        //可供选择的每页的行数（*）
+      pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
       search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
       strictSearch: true,
       showColumns: true,                  //是否显示所有的列
@@ -211,7 +210,7 @@ var SpiderTableInit = function () {
       showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
       cardView: false,                    //是否显示详细视图
       detailView: false,                   //是否显示父子表
-      columns: [ {
+      columns: [{
         field: 'SpiderName',
         title: '爬虫名'
       }, {
@@ -238,7 +237,7 @@ var SpiderTableInit = function () {
   //得到查询的参数
   oTableInit.queryParams = function (params) {
     var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
-     
+
     };
     return temp;
   };
@@ -260,7 +259,7 @@ var OperateTableInit = function () {
       sidePagination: "client",           //分页方式：client客户端分页，server服务端分页（*）
       pageNumber: 1,                       //初始化加载第一页，默认第一页
       pageSize: 5,                       //每页的记录行数（*）
-      pageList: [5,10, 25, 50, 100],        //可供选择的每页的行数（*）
+      pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
       search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
       strictSearch: true,
       showColumns: true,                  //是否显示所有的列
@@ -274,16 +273,16 @@ var OperateTableInit = function () {
       detailView: false,                   //是否显示父子表
       columns: [{
         field: 'Time',
-        width:"15%",
+        width: "15%",
         title: '时间'
       }, {
         field: 'Operate',
-        width:"15%",
+        width: "15%",
         title: '操作'
-      },  {
+      }, {
         field: 'Msg',
         title: '操作结果'
-      }, 
+      },
       ]
     });
   };
@@ -291,7 +290,7 @@ var OperateTableInit = function () {
   //得到查询的参数
   oTableInit.queryParams = function (params) {
     var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
-     
+
     };
     return temp;
   };
@@ -299,44 +298,39 @@ var OperateTableInit = function () {
 };
 
 
-function updateOperateTable(operate, msg){
+function updateOperateTable(operate, msg) {
   var time = new Date()
-  record = {Time:time.format("yyyy-MM-dd hh:mm:ss"),Operate:operate, Msg:msg}
-  $('#tb_operate').bootstrapTable('prepend',record);    
+  record = { Time: time.format("yyyy-MM-dd hh:mm:ss"), Operate: operate, Msg: msg }
+  $('#tb_operate').bootstrapTable('prepend', record);
 }
 
 
-$("#bt_queryPods").click(function (){
+$("#bt_queryPods").click(function () {
   var data = "post no data"
-  var url = getRootPath() + "cluster/scale"
+  var url = getRootPath() + "get/pods"
+  console.log("url", url)
   $.post(url,
     data,
     function (data, status) {
-      
-      var resp = JSON.parse(data);
-      updateOperateTable("获取集群信息", resp.Msg)
-      if (resp.Status == 0) {
-        console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
-      } else {
-        alert("查询错误:" + resp.Msg)
-      }
+      $('#tb_spider').bootstrapTable('load', data);
+      updateOperateTable("查询集群信息", "succ")
     });
 });
 
 // 获取spider状态
-$("#bt_cluster_status").click(function (){
-  var data = $("#sspidername").val()
+$("#bt_cluster_status").click(function () {
+  var data = $("#form_cluster_status").serialize();
   var url = getRootPath() + "cluster/spiderstatus"
+  console.log("url", url)
   $.post(url,
     data,
     function (data, status) {
-      
+
       var resp = JSON.parse(data);
-      updateOperateTable("获取爬虫信息", resp.Msg)
+      updateOperateTable("获取爬虫状态", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
+        // $('#tb_spider').bootstrapTable('refresh'); 
       } else {
         alert("查询错误:" + resp.Msg)
       }
@@ -344,79 +338,105 @@ $("#bt_cluster_status").click(function (){
 });
 
 // 部署爬虫
-$("#bt_cluster_deployment").click(function (){
+$("#bt_cluster_deployment").click(function () {
   var data = $("#form_cluster_deployment").serialize();
   var url = getRootPath() + "cluster/deployment"
+  console.log("url", url)
   $.post(url,
     data,
     function (data, status) {
       var resp = JSON.parse(data);
-      updateOperateTable("获取集群信息", resp.Msg)
+      updateOperateTable("部署爬虫", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
-        // $('#tb_spider').bootstrapTable({
-        //   data:resp.Data,
-        // })
+        // $('#tb_spider').bootstrapTable('refresh'); 
       } else {
-        alert("查询错误:" + resp.Msg)
+        alert("部署爬虫错误:" + resp.Msg)
       }
     });
 });
 
 // 启动爬虫
-$("#bt_cluster_start").click(function (){
+$("#bt_cluster_start").click(function () {
   var data = $("#form_cluster_start").serialize();
+  // var data = new FormData(document.querySelector("form_cluster_start"));//获取form值
+  console.log("start data:", data)
   var url = getRootPath() + "cluster/start"
-  $.post(url,
-    data,
-    function (data, status) {
-      
+  console.log("url", url)
+  // $.post(url,
+  //   data,
+  //   function (data, status) {
+
+  //     var resp = JSON.parse(data);
+  //     updateOperateTable("启动爬虫", resp.Msg)
+  //     if (resp.Status == 0) {
+  //       console.log("get resp Data:", resp)
+  //      //  $('#tb_spider').bootstrapTable('refresh'); 
+  //     } else {
+  //       alert("启动爬虫错误:" + resp.Msg)
+  //     }
+  //   });
+  
+  // var fd = new FormData(document.querySelector("form_cluster_start"));
+  var fd = new FormData();
+  fd.append('config', $('#config')[0].files[0]);
+  fd.append('spidername',$("#stspidername").val())
+  $.ajax({
+    url: url,
+    type: "POST",
+    data: fd,
+    processData: false,  // 不处理数据
+    contentType: false,   // 不设置内容类型
+    success: function (data) {
       var resp = JSON.parse(data);
-      updateOperateTable("获取集群信息", resp.Msg)
+      updateOperateTable("启动爬虫", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
+        //  $('#tb_spider').bootstrapTable('refresh'); 
       } else {
-        alert("查询错误:" + resp.Msg)
+        alert("启动爬虫错误:" + resp.Msg)
       }
-    });
+    }
+  });
 });
 
+
 // 扩缩容
-$("#bt_cluster_scale").click(function (){
-  var data = $("#form_cluster_deployment").serialize();
+$("#bt_cluster_scale").click(function () {
+  var data = $("#form_cluster_scale").serialize();
   var url = getRootPath() + "cluster/scale"
+  console.log("url", url)
   $.post(url,
     data,
     function (data, status) {
-      
+
       var resp = JSON.parse(data);
-      updateOperateTable("获取集群信息", resp.Msg)
+      updateOperateTable("爬虫扩缩容", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
+        // $('#tb_spider').bootstrapTable('refresh'); 
       } else {
-        alert("查询错误:" + resp.Msg)
+        alert("爬虫扩缩容操作错误:" + resp.Msg)
       }
     });
 });
 
 // 删除
-$("#bt_cluster_delete").click(function (){
-  var data = $("#form_cluster_deployment").serialize();
-  var url = getRootPath() + "cluster/scale"
+$("#bt_cluster_delete").click(function () {
+  var data = $("#form_cluster_delete").serialize();
+  var url = getRootPath() + "cluster/delete"
+  console.log("url", url)
   $.post(url,
     data,
     function (data, status) {
-      
+
       var resp = JSON.parse(data);
-      updateOperateTable("获取集群信息", resp.Msg)
+      updateOperateTable("删除爬虫", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        $('#tb_spider').bootstrapTable('load',resp.Data); 
+        $('#tb_spider').bootstrapTable('refresh');
       } else {
-        alert("查询错误:" + resp.Msg)
+        alert("删除爬虫操作错误:" + resp.Msg)
       }
     });
 });

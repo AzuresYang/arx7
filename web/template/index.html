@@ -185,7 +185,7 @@
 							class="form-control span2">
 					</div>
 					<div class="col-sm-2">
-						<button type="submit" id="bt_cluster_status" class="btn btn-default">查询</button>
+						<button type="button" id="bt_cluster_status" class="btn btn-default">查询</button>
 					</div>
 				</div>
 			</form>
@@ -200,11 +200,11 @@
 						<input type="text" name="image" placeholder="镜像地址" id="image" class="form-control span2">
 					</div>
 					<div class="col-sm-2">
-						<button type="submit" id="bt_cluster_deployment" class="btn btn-default">发布</button>
+						<button type="button" id="bt_cluster_deployment" class="btn btn-default">发布</button>
 					</div>
 				</div>
 			</form>
-			<form id="form_cluster_start" role="form" class="form-horizontal" style="padding-left: 10px;">
+			<form id="form_cluster_start" enctype="multipart/form-data" action="http://127.0.0.1:8888/cluster/start" method="post" role="form" class="form-horizontal" style="padding-left: 10px;">
 				<div class="form-group ">
 					<label class="col-sm-1 control-label " for="stspidername">启动爬虫程序</label>
 					<div class="col-sm-2">
@@ -215,7 +215,7 @@
 						<input type="file" name="config" placeholder="配置文件" id="config" class="">
 					</div>
 					<div class="col-sm-2">
-						<button type="submit" id="bt_cluster_start" class="btn btn-default">启动</button>
+						<button type="button" id="bt_cluster_start" class="btn btn-default">启动</button>
 					</div>
 				</div>
 			</form>
@@ -231,7 +231,7 @@
 							class="form-control span2">
 					</div>
 					<div class="col-sm-2">
-						<button type="submit" id="bt_cluster_scale" class="btn btn-default">扩缩容</button>
+						<button type="button" id="bt_cluster_scale" class="btn btn-default">扩缩容</button>
 					</div>
 				</div>
 			</form>
@@ -243,13 +243,13 @@
 							class="form-control span2">
 					</div>
 					<div class="col-sm-2">
-						<button type="submit" id="bt_cluster_delete" class="btn btn-default">删除</button>
+						<button type="button" id="bt_cluster_delete" class="btn btn-default">删除</button>
 					</div>
 				</div>
 			</form>
 			<div class="row">
 				<div class="col-sm-2">
-					<button type="submit" id="bt_queryPods" class="btn btn-default">查询集群信息</button>
+					<button type="button" id="bt_queryPods" class="btn btn-default">查询集群信息</button>
 				</div>
 			</div>
 			<div id="cluster_toolbar" class="btn-group">
