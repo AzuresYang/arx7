@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-29 19:15:59
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-04 17:45:12
+ * @Last Modified time: 2019-05-10 01:15:28
  */
 
 package controller
@@ -41,7 +41,7 @@ type MonitorData struct {
 	Time    int64 // 给前端的是这个数据，就这样吧
 }
 
-type ClusterInfo struct {
+type SpiderNodeInfo struct {
 	SpiderName string `json:"SpiderName"`
 	NodeStatus string `json:"NodeStatus"`
 	RunStatus  string `json:"RunStatus"`
@@ -105,6 +105,15 @@ func responseJson(response http.ResponseWriter, status uint32, msg string, data 
 	if err != nil {
 		return err
 	}
+	// 允许跨域
+	//跨域请求，*代表允许全部类型
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	//允许请求方式
+	response.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+	//用来指定本次预检请求的有效期，单位为秒，在此期间不用发出另一条预检请求
+	response.Header().Set("Access-Control-Max-Age", "3600")
+	//请求包含的字段内容，如有多个可用哪个逗号分隔如下
+	response.Header().Set("Access-Control-Allow-Headers", "content-type,x-requested-with,Authorization, x-ui-request,lang")
 	fmt.Fprintf(response, string(jdata))
 	return nil
 }

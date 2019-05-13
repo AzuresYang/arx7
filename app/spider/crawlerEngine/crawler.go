@@ -24,6 +24,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	default_sleep_pause = [2]int64{2, 2}
+)
+
 type (
 	Crawler interface {
 		Init(dl downloader.Downloader, pipe pipeline.Pipeline) error // 初始化
@@ -49,7 +53,7 @@ func NewCrawler(id int) Crawler {
 	return &crawler{
 		id:         id,
 		if_stop:    false,
-		pause:      [2]int64{1, 2},
+		pause:      default_sleep_pause,
 		downloader: &downloader.SimpleDownloader{},
 	}
 }
@@ -105,11 +109,11 @@ func (self *crawler) run() {
 	// 不断获取链接，下载，处理
 	// 有点混乱
 	log.Debugf("crawler[%d] start run.if_stop:%+v", self.id, self.if_stop)
-	var max_req_null_times int = int(runtime.G_CrawlerCfg.TaskConf.MaxGetRequestNullTimeSecond /
-		runtime.G_CrawlerCfg.RequestGetTimeOut)
-	get_req_null_times := 0
+	var max_req_null_times uint32 = runtime.G_CrawlerCfg.TaskConf.MaxGetRequestNullTimeSecond /
+		runtime.G_CrawlerCfg.RequestGetTimeOut
+	var get_req_null_times uint32 = 0
 	for !self.if_stop {
-		req := request.RequestMgr.GetRequest(runtime.G_CrawlerCfg.RequestGetTimeOut)
+		req := request.RequestMgr.GetRequest(time.Second * time.Duration(runtime.G_CrawlerCfg.RequestGetTimeOut))
 		if req == nil {
 			// 太长时间没有新链接的话，自动停止工作
 			get_req_null_times += 1
@@ -118,7 +122,7 @@ func (self *crawler) run() {
 				self.if_stop = true
 				break
 			} else {
-				log.Tracef("crawler[%d]get request nil.times:%d|%d", self.id, get_req_null_times, max_req_null_times)
+				log.Infof("crawler[%d]get request nil.times:%d|%d", self.id, get_req_null_times, max_req_null_times)
 				// 没有新链接的时候，等一段时间继续获取
 				time.Sleep(config.DEFAULT_REQ_IS_NULL_WAITTIME)
 				continue
@@ -132,7 +136,7 @@ func (self *crawler) run() {
 
 func (self *crawler) processRequest(req *request.ArxRequest) {
 	code_info := reflect.TypeOf(self).String()
-	log.Debugf("[%s][%d] crawler get request:%s", code_info, self.id, req.Url)
+	log.Tracef("[%s][%d] crawler get request:%s", code_info, self.id, req.Url)
 	// 获取处理器
 	procer := processor.Manager.GetProcessor(req.ProcerName)
 	if procer == nil {
@@ -155,7 +159,7 @@ func (self *crawler) processRequest(req *request.ArxRequest) {
 	}
 	record.CountAddOne(record.COUNT_DOWNLOAD_SUCC)
 	monitorHandler.AddOneWithClassfy(status.MONI_SYS_DOWNLOAD, 0)
-	log.Info("download succ.URL:" + req.Url)
+	log.Trace("download succ.URL:" + req.Url)
 	cdata := procer.Process(ctx)
 	if cdata != nil {
 		self.pipeline.CollectData(cdata)
@@ -166,5 +170,5 @@ func (self *crawler) processRequest(req *request.ArxRequest) {
 
 func (self *crawler) sleep() {
 	sleep_time := self.pause[0] + rand.Int63n(self.pause[1])
-	time.Sleep(time.Duration(sleep_time) * time.Millisecond)
+	time.Sleep(time.Duration(sleep_time) * time.Second)
 }

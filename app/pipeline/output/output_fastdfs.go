@@ -16,7 +16,9 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"github.com/AzuresYang/arx7/app/arxmonitor/monitorHandler"
 	"github.com/AzuresYang/arx7/app/pipeline"
+	"github.com/AzuresYang/arx7/app/status"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -145,8 +147,10 @@ func (self *OutputFastDfs) uploadData(data *CellFastDfs) {
 	}
 	// 打印保存结果
 	if ret.Retcode == 0 {
+		monitorHandler.AddOne(status.MONI_SYS_DFS_UPLOAD_SUCC)
 		log.Infof("[%s]collect data[%s] succ.", code_info, data.FileName)
 	} else {
+		monitorHandler.AddOne(status.MONI_SYS_DFS_UPLOAD_FAIL)
 		log.Infof("[%s]collect data[%s] fail.ret:%s", code_info, data.FileName, string(body))
 	}
 }

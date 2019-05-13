@@ -20,6 +20,7 @@ type (
 		Get() Crawler
 		Free(Crawler)
 		Stop()
+		IfAllCrawlerStop() bool
 	}
 
 	crawlerpool struct {

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/AzuresYang/arx7/app/message"
 	"github.com/AzuresYang/arx7/arxdeployment"
@@ -231,7 +230,7 @@ func scaleSpider(ctx *cli.Context) {
 	spider_name := ctx.String("spidername")
 	node := ctx.Uint64("nodes")
 	fmt.Printf("scale spider [%s] nodes  to %d\n", spider_name, node)
-	arxdeployment.DoScaleSpider(spider_name, node)
+	arxdeployment.DoScaleSpider(spider_name, fmt.Sprintf("%d", node))
 }
 
 // 删除Spider
@@ -290,7 +289,7 @@ func createDefaultConf(ctx *cli.Context) {
 		CrawlerTreadNum:             1,
 		RedisAddr:                   "RedisIp:Port",
 		RedisPassword:               "12345",
-		MaxGetRequestNullTimeSecond: 1 * time.Minute,
+		MaxGetRequestNullTimeSecond: 1,
 		MasterListenPort:            "31001",
 		FastDfsAddr:                 "fastDfsIp:Port",
 	}

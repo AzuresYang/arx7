@@ -82,14 +82,22 @@ func (self *RequestManager) testRedis(redisAddr string, pwd string) error {
 // 清空redis队列
 func (self *RequestManager) ClearRedis(redisAddr string, pwd string) error {
 	unique_set := self.getRedisUniqueSetName()
+	keys := [...]string{
+		self.getRedisUrlQueueName(ARXREQ_PRIORITY_LOW),
+		self.getRedisUrlQueueName(ARXREQ_PRIORITY_MIDDLE),
+		self.getRedisUrlQueueName(ARXREQ_PRIORITY_HIGH),
+		unique_set,
+	}
 	pwd_option := redis.DialPassword(pwd)
 	c, err := redis.Dial("tcp", redisAddr, pwd_option)
 	if c != nil {
-		_, derr := c.Do("del", unique_set)
-		if derr != nil {
-			return errors.New(fmt.Sprintf("del unique set fail:%s", derr.Error()))
+		defer c.Close()
+		for _, key := range keys {
+			_, derr := c.Do("del", key)
+			if derr != nil {
+				return errors.New(fmt.Sprintf("del redis key fail:%s", derr.Error()))
+			}
 		}
-		c.Close()
 	}
 	return err
 }
@@ -168,7 +176,6 @@ func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {
 		return nil
 	}
 	list := string(reply[0].([]byte))
-	log.Debugf("[%s] get request from:%s", code_info, list)
 	req_bytes := reply[1].([]byte)
 	req := new(ArxRequest)
 	err = json.Unmarshal(req_bytes, req)
@@ -176,7 +183,7 @@ func (self *RequestManager) GetRequest(timeout time.Duration) *ArxRequest {
 		log.Errorf("[%s]unserialize request from redis fail:%s", code_info, err.Error())
 		return nil
 	}
-	log.Debugf("[%s] get request from redis url:%s", code_info, req.Url)
+	log.Debugf("[%s] get request from redis[%s|%s]", code_info, list, req.Url)
 
 	monitorHandler.AddOne(status.MONI_SYS_REQUEST_GET)
 	return req
@@ -225,15 +232,17 @@ func (self *RequestManager) AddNeedGrabRequest(req *ArxRequest) error {
 	c.Send("RPUSH", redis_url_key, value)
 	c.Send("SADD", unique_set, unique_id)
 	c.Flush()
-	reply1, _ := c.Receive()
-	reply2, _ := c.Receive()
-	if reply1 == nil || reply2 == nil {
-		err_msg := fmt.Sprintf("add request to redis error.Push unique_id:%+v, Add request:%+v", reply1, reply2)
-		log.Errorf("[%s]%s", code_info, err_msg)
-		return errors.New(err_msg)
-	}
+	c.Receive()
+	c.Receive()
+	// reply1, _ := c.Receive()
+	// reply2, _ := c.Receive()
+	// if reply1 == nil || reply2 == nil {
+	// 	err_msg := fmt.Sprintf("add request to redis error.Push unique_id:%+v, Add request:%+v", reply1, reply2)
+	// 	log.Errorf("[%s]%s", code_info, err_msg)
+	// 	return errors.New(err_msg)
+	// }
 	log.Debugf("[%s]Add new url succ:%s", code_info, req.Url)
-	monitorHandler.AddOne(status.MONI_SYS_REQUEST_GET)
+	monitorHandler.AddOne(status.MONI_SYS_REQUEST_ADD)
 	return nil
 }
 

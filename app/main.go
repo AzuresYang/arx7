@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-22 19:11:44
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 23:42:34
+ * @Last Modified time: 2019-05-08 19:35:29
  */
 package main
 
@@ -14,8 +14,10 @@ import (
 
 	"github.com/AzuresYang/arx7/app/arxmaster"
 	"github.com/AzuresYang/arx7/app/processor"
+	"github.com/AzuresYang/arx7/app/processor/biqu"
 	"github.com/AzuresYang/arx7/app/spider"
 	"github.com/AzuresYang/arx7/config"
+	"github.com/AzuresYang/arx7/web/webapp"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -134,7 +136,8 @@ func startAsMaster(ctx *cli.Context) {
 		}
 	}
 	fmt.Println("----start arx7 master succ----")
-	masterSvr.Run()
+	go masterSvr.Run()
+	webapp.Start(conf)
 }
 
 func startAsSpider(ctx *cli.Context) {
@@ -146,6 +149,8 @@ func startAsSpider(ctx *cli.Context) {
 	if file != "" {
 		setOutput(file)
 	}
+	procer := biqu.NewProcessor()
+	processor.Manager.Register(&procer)
 	// 用linux的启动方式，这里就不做设置日志的保存文件了
 	spider := spider.NewSpider()
 	port := ctx.String("port")

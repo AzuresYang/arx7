@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-14 20:42:23
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 22:35:59
+ * @Last Modified time: 2019-05-08 13:14:07
  */
 package crawlerEngine
 
@@ -89,6 +89,10 @@ func (self *CrawlerEngine) Stop() {
 func (self *CrawlerEngine) IfStop() bool {
 	if self.state == status.STOP {
 		return true
+	} else {
+		if self.crawlerPool.IfAllCrawlerStop() {
+			return true
+		}
 	}
 	return false
 }

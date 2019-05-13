@@ -8,6 +8,11 @@
 
 //指定图表的配置项和数据
 function getRootPath() {
+  // return "http://127.0.0.1:8888/"
+  return "http://132.232.43.251:8888/"
+}
+
+function getMonitorPath(){
   return "http://127.0.0.1:8888/"
 }
 
@@ -102,7 +107,7 @@ $("#bt_querymonitor").click(function () {
     tRealTime = window.setInterval(function () {
 
       var end_time = new Date();
-      var start_time = end_time.DateLess('n', 3)
+      var start_time = end_time.DateLess('n', 10)
       $("#datetimepicker1").datetimepicker("setDate", start_time);
 
       $("#datetimepicker2").datetimepicker("setDate", end_time);
@@ -110,7 +115,7 @@ $("#bt_querymonitor").click(function () {
       var data = $("#monitor_form").serialize();
       console.log("post data:" + data)
       refreshMonitorInfo(data)
-    }, 1000);
+    }, 3000);
   } else {
     isRealTimeMonitor = false
     var end_time = new Date();
@@ -130,7 +135,7 @@ $("#ifRealTime").click(function () {
   }
 })
 function refreshMonitorInfo(data) {
-  var url = getRootPath() + "get/monitor"
+  var url = getMonitorPath() + "get/monitor"
   $.post(url,
     data,
     function (data, status) {
@@ -312,8 +317,14 @@ $("#bt_queryPods").click(function () {
   $.post(url,
     data,
     function (data, status) {
-      $('#tb_spider').bootstrapTable('load', data);
-      updateOperateTable("查询集群信息", "succ")
+      var resp = JSON.parse(data);
+      updateOperateTable("查询集群信息", resp.Msg)
+      if (resp.Status == 0) {
+        $('#tb_spider').bootstrapTable('load', resp.Data);
+      } else {
+        alert("查询错误:" + resp.Msg)
+      }
+     
     });
 });
 
@@ -330,7 +341,7 @@ $("#bt_cluster_status").click(function () {
       updateOperateTable("获取爬虫状态", resp.Msg)
       if (resp.Status == 0) {
         console.log("get resp Data:", resp)
-        // $('#tb_spider').bootstrapTable('refresh'); 
+        $('#tb_spider').bootstrapTable('load', resp.Data);
       } else {
         alert("查询错误:" + resp.Msg)
       }
@@ -417,6 +428,26 @@ $("#bt_cluster_scale").click(function () {
         // $('#tb_spider').bootstrapTable('refresh'); 
       } else {
         alert("爬虫扩缩容操作错误:" + resp.Msg)
+      }
+    });
+});
+
+// 停止
+$("#bt_cluster_stop").click(function () {
+  var data = $("#form_cluster_stop").serialize();
+  var url = getRootPath() + "cluster/stop"
+  console.log("url", url)
+  $.post(url,
+    data,
+    function (data, status) {
+
+      var resp = JSON.parse(data);
+      updateOperateTable("停止爬虫", resp.Msg)
+      if (resp.Status == 0) {
+        console.log("get resp Data:", resp)
+        $('#tb_spider').bootstrapTable('load', resp.Data);
+      } else {
+        alert("停止爬虫操作错误:" + resp.Msg)
       }
     });
 });

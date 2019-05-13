@@ -127,6 +127,7 @@ func (self *msgsaver) doSaveMonitorMsg(c chan *arxmonitor.MonitorMsgPkg) {
 	// 	return
 	// }
 	log.Debugf("[%s]waiting monitor msg.", code_info)
+
 	for !self.ifStop {
 		select {
 		case pkg := <-c:
@@ -148,12 +149,13 @@ func (self *msgsaver) doSaveMonitorMsg(c chan *arxmonitor.MonitorMsgPkg) {
 			query_stmt.Close()
 			update_stmt.Close()
 		default:
-			if !self.ifStop {
+			if self.ifStop {
 				break
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+
 	log.Debugf("[%s][%d] stop save monitormsg", code_info, self.Id)
 }
 
@@ -176,6 +178,7 @@ func (self *msgsaver) addMonitorMsgToDb(pkg *arxmonitor.MonitorMsgPkg, qstmt *sq
 			log.Tracef("[%s]query found metric:%d, id:%d, value:%d", code_info, msg.Metric, id, value)
 			break
 		}
+		rows.Close()
 		// 如果不存在，添加一个
 		if id < 0 {
 			ret, err := istmt.Exec(msg.SvcId, msg.Metric, msg.Classfy, msg.Value, pkg.Ip, msg.Time)

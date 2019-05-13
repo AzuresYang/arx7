@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type CrawlerTask struct {
@@ -21,10 +20,10 @@ type CrawlerTask struct {
 	TaskId                      uint32 // 任务ID
 	CrawlerTreadNum             uint32 // 爬虫线程数量
 	RedisAddr                   string
-	RedisPassword               string        // redis密码
-	MaxGetRequestNullTimeSecond time.Duration // 长时间内没有新链接时，停止工作crawler的设置， 单位：秒， 为0时表示一直工作
-	MasterListenPort            string        // SpiderMaster监听的端口
-	FastDfsAddr                 string        // 分布式系统地址
+	RedisPassword               string // redis密码
+	MaxGetRequestNullTimeSecond uint32 // 长时间内没有新链接时，停止工作crawler的设置， 单位：秒， 为0时表示一直工作
+	MasterListenPort            string // SpiderMaster监听的端口
+	FastDfsAddr                 string // 分布式系统地址
 }
 
 type SpiderStartConfig struct {
@@ -34,8 +33,9 @@ type SpiderStartConfig struct {
 }
 
 type MasterConfig struct {
-	MysqlConf  MysqlConfig
-	ListenPort string
+	MysqlConf     MysqlConfig
+	ListenPort    string
+	WebListenAddr string
 }
 
 func WriteConfigToFileJson(dir string, fileName string, conf interface{}) error {

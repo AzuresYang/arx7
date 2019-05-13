@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-30 12:11:16
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-01 12:15:21
+ * @Last Modified time: 2019-05-09 19:35:48
  */
 package controller
 
@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AzuresYang/arx7/app/arxmonitor"
 	"github.com/AzuresYang/arx7/config"
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +24,10 @@ type dbService struct {
 }
 
 var DbService *dbService = &dbService{}
+
+const (
+	default_monitor_interval int64 = 30 // 查询精度
+)
 
 func (self *dbService) Init(db_cfg *config.MysqlConfig) error {
 	self.db_cfg = db_cfg
@@ -73,6 +76,7 @@ func (self *dbService) GetMonitorInfo(query *FormQueryMonitor, start_time int64,
 			datas = append(datas, row)
 		}
 	}
+
 	return generateMonitorData(start_time, end_time, datas), nil
 }
 
@@ -88,17 +92,20 @@ func (self *dbService) GetMonitorInfoByForm(query *FormQueryMonitor) ([]MonitorD
 
 // 需要按照精度对时间生成
 func generateMonitorData(start_time int64, end_time int64, monitor_data []MonitorData) []MonitorData {
-	start_time -= start_time % arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
-	end_time += arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
-	end_time -= end_time % arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
-	capacity := (end_time - start_time) / arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
+	if end_time > time.Now().Unix() {
+		end_time = time.Now().Unix()
+	}
+	start_time -= start_time % default_monitor_interval
+	end_time += default_monitor_interval
+	end_time -= end_time % default_monitor_interval
+	capacity := (end_time - start_time) / default_monitor_interval
 	data := make([]MonitorData, 0, capacity)
 	// 没有监控数据，只需要填充时间列就好了
 	temp := MonitorData{}
 	var i int64 = 0
 	if len(monitor_data) <= 0 {
 		for i = 0; i < capacity; i++ {
-			temp.Time = start_time + i*arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
+			temp.Time = start_time + i*default_monitor_interval
 			data = append(data, temp)
 		}
 	} else {
@@ -107,21 +114,21 @@ func generateMonitorData(start_time int64, end_time int64, monitor_data []Monito
 		monitor_idx := 0
 
 		for i = 0; i < capacity; i++ {
-			temp.Time = start_time + i*arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
+			temp.Time = start_time + i*default_monitor_interval
 			temp.Value = 0
 
-			// 没有数据就直接结束了吧
-			if monitor_idx >= len(monitor_data) {
-				break
-			}
-			// 精度不对，填充进去，原先的精度需要补充
-			if temp.Time > monitor_data[monitor_idx].Time {
+			// 有原数据，且原数据小于时间间隔的精度
+			for (monitor_idx < len(monitor_data)) && (monitor_data[monitor_idx].Time < temp.Time) {
 				data = append(data, monitor_data[monitor_idx])
 				monitor_idx++
-			} else if temp.Time == monitor_data[monitor_idx].Time {
-				// 精度相同，值替换一下
-				temp.Value = monitor_data[monitor_idx].Value
-				monitor_idx++
+			}
+			// 时间相等的情况
+			if monitor_idx < len(monitor_data) {
+				if temp.Time == monitor_data[monitor_idx].Time {
+					// 精度相同，值替换一下
+					temp.Value = monitor_data[monitor_idx].Value
+					monitor_idx++
+				}
 			}
 			data = append(data, temp)
 		}
@@ -135,15 +142,16 @@ func correctMonitorData(monitor_data []MonitorData) []MonitorData {
 	data := make([]MonitorData, 0, len(monitor_data))
 	data_idx := -1 // 最后一位
 	for i, _ := range monitor_data {
+		// fmt.Printf("[%s]%+v\n", i, monitor_data[i])
 		if i == 0 {
 			data = append(data, monitor_data[i])
 			data_idx++
 			continue
 		}
 		// 时间统一处理
-		monitor_data[i].Time -= monitor_data[i].Time % arxmonitor.DEFAULT_MONITOR_TIME_INTERVAL
+		monitor_data[i].Time -= monitor_data[i].Time % default_monitor_interval
 		// fmt.Printf("i:%d, monitor:%d, idx:%d, data:%d\n", i, data_idx, len(data_idx))
-		if monitor_data[i-1].Time == data[data_idx].Time {
+		if monitor_data[i].Time == data[data_idx].Time {
 			data[data_idx].Value += monitor_data[i].Value
 		} else {
 			data = append(data, monitor_data[i])

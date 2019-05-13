@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-27 16:01:21
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-06 23:26:12
+ * @Last Modified time: 2019-05-10 01:36:13
  */
 package controller
 
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/AzuresYang/arx7/arxdeployment"
 	"github.com/AzuresYang/arx7/config"
@@ -22,23 +23,57 @@ const (
 	default_spider_port uint64 = 31001
 )
 
+func GetSpiderNodeInfo(spider_name string) []SpiderNodeInfo {
+	node_infos := []SpiderNodeInfo{}
+	kube_msg := arxdeployment.DoGetSpiderPod(spider_name)
+	if !strings.Contains(kube_msg, spider_name) {
+		return node_infos
+	}
+	lines := strings.Split(kube_msg, "\n")
+	for _, line := range lines {
+		item := strings.Fields(line)
+		if len(item) <= 0 {
+			continue
+		}
+		node_infos = append(node_infos, SpiderNodeInfo{
+			SpiderName: spider_name,
+			NodeStatus: item[1],
+			RunStatus:  item[2],
+			Age:        item[4],
+			NodeAddr:   item[6],
+			Desc:       ""})
+	}
+	return node_infos
+}
+
+func GetClusterNodeInfo() []SpiderNodeInfo {
+	node_infos := []SpiderNodeInfo{}
+	kube_msg := arxdeployment.DoGetPod()
+	if len(kube_msg) <= 0 {
+		return node_infos
+	}
+	lines := strings.Split(kube_msg, "\n")
+	for _, line := range lines {
+		item := strings.Fields(line)
+		if len(item) != 7 {
+			continue
+		}
+		node_infos = append(node_infos, SpiderNodeInfo{
+			SpiderName: item[0],
+			NodeStatus: item[1],
+			RunStatus:  item[2],
+			Age:        item[4],
+			NodeAddr:   item[6],
+			Desc:       ""})
+	}
+	return node_infos
+}
+
 func ClusterHandlerGetPods(response http.ResponseWriter, request *http.Request) {
 	log.Infof("Get pods Conn. Form:%#v", request.Form)
-
-	pod1 := ClusterInfo{
-		SpiderName: "spider01",
-		NodeStatus: "1/1",
-		RunStatus:  "Running",
-		Age:        "6d",
-		NodeAddr:   "127.0.0.1",
-		Desc:       "desc",
-	}
-	pod2 := pod1
-	pod2.SpiderName = "spider002"
-	cluster_infos := []ClusterInfo{pod1, pod2}
-	jdata, _ := json.Marshal(cluster_infos)
-	log.Infof("response pods data")
-	fmt.Fprintf(response, string(jdata))
+	spider_infos := GetClusterNodeInfo()
+	log.Infof("[Get Pods]%+v", spider_infos)
+	responseJson(response, 0, "succ", spider_infos)
 }
 
 // 获取爬虫状态
@@ -65,7 +100,8 @@ func ClusterHandlerGetSpiderStatus(response http.ResponseWriter, request *http.R
 		ret_msg = fmt.Sprintf("%s\n---[%s]:%s---", ret_msg, node, msg)
 	}
 	log.Infof("[%s]get status ret:%s", code_info, ret_msg)
-	err := responseJson(response, 0, ret_msg, ret_msg)
+	spider_infos := GetSpiderNodeInfo(spider_name)
+	err := responseJson(response, 0, ret_msg, spider_infos)
 	if err != nil {
 		log.Errorf("[monitorInfoHandler] response err:%s", err.Error())
 	}
@@ -118,6 +154,13 @@ func ClusterHandlerStartSpider(response http.ResponseWriter, request *http.Reque
 		responseJson(response, 1, "参数不能为空", "")
 		return
 	}
+
+	nodes := arxdeployment.GetSpiderNodes(spider_name)
+	if len(nodes) <= 0 {
+		log.Errorf("[%s]没有该爬虫的部署信息:%s", code_info, spider_name)
+		responseJson(response, 1, "没有该爬虫的部署信息："+spider_name, "")
+		return
+	}
 	// 读取文件
 	file_bytes, ierr := ioutil.ReadAll(file)
 	if ierr != nil {
@@ -135,8 +178,15 @@ func ClusterHandlerStartSpider(response http.ResponseWriter, request *http.Reque
 		responseJson(response, 4, "配置文件不是Spider配置,请确认是Spider的json配置文件", "")
 		return
 	}
+
+	var ret_code uint32 = 0
+	nerr, ret := arxdeployment.DoStartSpider(spider_name, conf)
+	if nerr != nil {
+		ret_code = 5
+		ret = fmt.Sprintf("[error]%s:---%s", err.Error(), ret)
+	}
 	log.Infof("[%s]start ret:config:%+v\n", code_info, conf)
-	err = responseJson(response, 0, "succ", "")
+	err = responseJson(response, ret_code, ret, "")
 	if err != nil {
 		log.Errorf("[monitorInfoHandler] response err:%s", err.Error())
 	}
@@ -163,6 +213,43 @@ func ClusterHandlerScalePods(response http.ResponseWriter, request *http.Request
 	}
 	log.Infof("[%s]ret:%s", code_info, ret)
 	err = responseJson(response, ret_code, ret, "")
+	if err != nil {
+		log.Errorf("[monitorInfoHandler] response err:%s", err.Error())
+	}
+}
+
+// STOP爬虫
+func ClusterHandlerStopSpider(response http.ResponseWriter, request *http.Request) {
+	code_info := "Cluster.StopSpider"
+	request.ParseForm()
+	log.Infof("Conn stop spider status. Form:%#v", request.Form)
+	form := parseFormAsMap(request)
+	spider_name := form["spidername"]
+	if spider_name == "" {
+		log.Errorf("[%s]参数不能为空", code_info)
+		responseJson(response, 1, "参数不能为空", "")
+		return
+	}
+	nodes := arxdeployment.GetSpiderNodes(spider_name)
+	if len(nodes) <= 0 {
+		log.Errorf("[%s]没有该爬虫的部署信息:%s", code_info, spider_name)
+		responseJson(response, 0, "没有该爬虫的部署信息："+spider_name, "")
+		return
+	}
+	ret_map := arxdeployment.DoStopSpider(nodes)
+	spider_infos := GetSpiderNodeInfo(spider_name)
+	ret_msg := "Stop spider Status Ret:"
+	for node, msg := range ret_map {
+		ret_msg = fmt.Sprintf("%s\n---[%s]:%s---", ret_msg, node, msg)
+		ip := strings.Split(node, ":")[0]
+		for i, _ := range spider_infos {
+			if spider_infos[i].NodeAddr == ip {
+				spider_infos[i].Desc = msg
+			}
+		}
+	}
+	log.Infof("[%s]stop spider ret:%s", code_info, ret_msg)
+	err := responseJson(response, 0, ret_msg, spider_infos)
 	if err != nil {
 		log.Errorf("[monitorInfoHandler] response err:%s", err.Error())
 	}

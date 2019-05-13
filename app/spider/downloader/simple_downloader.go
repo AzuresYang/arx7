@@ -31,10 +31,6 @@ func (self *SimpleDownloader) Download(procer processor.Processor, req *arxreque
 		log.Error("request prepare fail.msg:", err.Error())
 		return nil
 	}
-	log.WithFields(log.Fields{
-		"URL":    req.Url,
-		"Method": req.Method,
-	}).Debug()
 
 	var ctx *context.CommContext
 	response, err := self.doRequest(req)
@@ -49,7 +45,7 @@ func (self *SimpleDownloader) Download(procer processor.Processor, req *arxreque
 		log.WithFields(log.Fields{
 			"URL":    req.Url,
 			"Method": req.Method,
-		}).Info("download succ.")
+		}).Debug("download succ.")
 
 		ctx = context.GetNewContext()
 		ctx.Request = req

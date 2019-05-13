@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-02 19:51:55
  * @Last Modified by: rayou
- * @Last Modified time: 2019-04-24 22:36:00
+ * @Last Modified time: 2019-05-08 13:17:36
  */
 package spider
 
@@ -66,11 +66,15 @@ func (self *Spider) Run() {
 	self.server.Run()
 }
 
-func (self *Spider) Stop() {
-	self.ce.Stop()
+func (self *Spider) IfCrawlerEngineStop() bool {
+	if self.ce != nil {
+		return self.ce.IfStop()
+	}
+	return true
+
 }
 func (self *Spider) StopCrawler() {
-	if self.ce != nil{
+	if self.ce != nil {
 		self.ce.Stop()
 	}
 	// 为空大法好
@@ -85,7 +89,7 @@ func (self *Spider) StartCrawler(cfg *config.CrawlerConfig) (error, uint32) {
 
 	// 之前有的话，先停止
 	if self.ce != nil {
-		self.ce.Stop()
+		// self.ce.Stop()
 		return errors.New("crawler is running"), status.ERR_START_SPIDER_FAIL_RUNNING
 	}
 	// 初始化监控组件

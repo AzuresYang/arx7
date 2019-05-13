@@ -87,7 +87,7 @@
 				<a href="#monitor-info" data-toggle="tab">监控查看</a>
 			</li>
 			<li><a href="#cluster" data-toggle="tab">集群信息</a></li>
-			<li><a href="#files" data-toggle="tab">文件管理</a></li>
+			<!-- <li><a href="#files" data-toggle="tab">文件管理</a></li> -->
 		</ul>
 	</div>
 	<!--侧边栏-->
@@ -99,20 +99,20 @@
 	</div>
 	<!--主标签页-->
 	<div id="page-main" class="tab-content">
-		<div class="tab-pane fade" id="monitor-info">
+		<div class="tab-pane fade  in active" id="monitor-info">
 			<label>集群监控查看</label>
 			<form id="monitor_form" role="form" class="form-horizontal" style="padding-left: 10px;">
 				<div class="form-group ">
 					<label class="col-sm-1 control-label " for="svcid">服务ID</label>
 					<div class="col-sm-2">
-						<input type="number" min="0" name="svcid" placeholder="number" value="5542" id="svcid"
+						<input type="number" min="0" name="svcid" placeholder="number" value="1" id="svcid"
 							class="form-control span2">
 					</div>
 				</div>
 				<div class="form-group">
 					<label class="col-sm-1 control-label" for="metric">监控ID</label>
 					<div class="col-sm-2">
-						<input type="number" min="0" name="metric" placeholder="number" value="5542" id="metric"
+						<input type="number" min="0" name="metric" placeholder="number" value="5002" id="metric"
 							class="form-control">
 					</div>
 				</div>
@@ -174,7 +174,7 @@
 			<div id="chart-monitor" style="width: 1200px; height: 500px;"></div>
 
 		</div>
-		<div class="tab-pane fade in active" id="cluster">
+		<div class="tab-pane fade" id="cluster">
 			<p>集群信息</p>
 
 			<form id="form_cluster_status" role="form" class="form-horizontal" style="padding-left: 10px;">
@@ -197,7 +197,7 @@
 							class="form-control span2">
 					</div>
 					<div class="col-sm-2">
-						<input type="text" name="image" placeholder="镜像地址" id="image" class="form-control span2">
+						<input type="text" name="image" value="193.112.68.221:5000/arxspider:v0.7" placeholder="镜像地址" id="image" class="form-control span2">
 					</div>
 					<div class="col-sm-2">
 						<button type="button" id="bt_cluster_deployment" class="btn btn-default">发布</button>
@@ -232,6 +232,18 @@
 					</div>
 					<div class="col-sm-2">
 						<button type="button" id="bt_cluster_scale" class="btn btn-default">扩缩容</button>
+					</div>
+				</div>
+			</form>
+			<form id="form_cluster_stop" role="form" class="form-horizontal" style="padding-left: 10px;">
+				<div class="form-group ">
+					<label class="col-sm-1 control-label " for="despidername">停止爬虫</label>
+					<div class="col-sm-2">
+						<input type="text" name="spidername" value="spider01" placeholder="爬虫任务名" id="stopspidername"
+							class="form-control span2">
+					</div>
+					<div class="col-sm-2">
+						<button type="button" id="bt_cluster_stop" class="btn btn-default">停止</button>
 					</div>
 				</div>
 			</form>

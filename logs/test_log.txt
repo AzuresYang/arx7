@@ -1,2 +1,0 @@
-time="2019-03-25T22:08:57+08:00" level=error msg=helloERROR
-time="2019-03-25T22:08:57+08:00" level=info msg=info

@@ -2,7 +2,7 @@
  * @Author: rayou
  * @Date: 2019-04-21 11:31:53
  * @Last Modified by: rayou
- * @Last Modified time: 2019-05-06 22:21:58
+ * @Last Modified time: 2019-05-10 01:28:48
  */
 package arxdeployment
 
@@ -28,8 +28,8 @@ import (
 // 从kuberntet中获取service关联到的节点
 func GetSpiderNodes(svc_name string) []string {
 	// 获取port的方式
-	//return []string{"193.112.68.221:31001", "47.102.101.90:31001"}
-	return []string{"132.232.43.251:31001", "132.232.43.251:31002"}
+
+	// return []string{"132.232.43.251:31001", "132.232.43.251:31002"}
 	cmd := fmt.Sprintf("kubectl get service | grep -w \"%s\" | awk -F \" \" '{print $4}'", svc_name)
 	ret_line, err := exec_shell(cmd)
 	fmt.Printf("service ret:%s", ret_line)
@@ -76,6 +76,7 @@ func GetSpiderNodes(svc_name string) []string {
 			return nil
 		}
 		addr := fmt.Sprintf("%s:%s", ip, port)
+		addr = fmt.Sprintf("%s:31001", ip)
 		nodes = append(nodes, addr)
 	}
 	log.Infof("[%s]get nodes:%+v\n", svc_name, nodes)
@@ -218,6 +219,8 @@ func DoDeleteSpider(spider_name string) (error, string) {
 	ret, err = exec_shell(cmd)
 	if err != nil {
 		ret_msg += "\n" + "[error]" + err.Error() + "\n" + ret
+	} else {
+		ret_msg += "\n" + ret
 	}
 	fmt.Println(ret)
 	cmd = fmt.Sprintf("kubectl delete service %s", spider_name)
@@ -225,6 +228,8 @@ func DoDeleteSpider(spider_name string) (error, string) {
 	fmt.Println(ret)
 	if err != nil {
 		ret_msg += "\n" + "[error]" + err.Error() + "\n" + ret
+	} else {
+		ret_msg += "\n" + ret
 	}
 	fmt.Println("delete down.")
 	return nil, ret_msg
@@ -238,6 +243,10 @@ func getSpiderStatus(ctx *cli.Context) {
 	for node, msg := range ret {
 		fmt.Printf("node:%s,    start result:%s\n", node, msg)
 	}
+}
+
+func DoStopSpider(nodes []string) map[string]string {
+	return SendMessageToSpider(nodes, message.MSG_REQ_STOP_SPIDER, []byte(""), "stop spider")
 }
 
 func DoGetSpiderStatusByNodes(nodes []string) map[string]string {
@@ -273,6 +282,18 @@ func SendMessageToSpider(nodes []string, cmd uint32, data []byte, comment string
 	}
 	wg.Wait()
 	return resp_result
+}
+
+func DoGetPod() string {
+	cmd := "kubectl get po -o wide | grep -v READY"
+	ret, _ := exec_shell(cmd)
+	return ret
+}
+
+func DoGetSpiderPod(spider_name string) string {
+	cmd := fmt.Sprintf("kubectl get po -o wide | grep \"%s\"", spider_name)
+	ret, _ := exec_shell(cmd)
+	return ret
 }
 
 func exec_shell(s string) (string, error) {
